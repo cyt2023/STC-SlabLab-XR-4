@@ -704,6 +704,10 @@ namespace UnityVolumeRendering
             RefreshDatasets();
             if (datasets.Count > 0)
             {
+                // Discovery may preselect the most useful variable, but opening
+                // a dataset is an explicit user decision on both flat screen
+                // and Quest. Auto-confirming here skipped the first workflow
+                // page whenever bundled/local For_VR data was present.
                 importSelectedVariableIndex = 0;
                 for (int index = 0; index < datasets.Count; index++)
                 {
@@ -714,7 +718,8 @@ namespace UnityVolumeRendering
                         break;
                     }
                 }
-                ConfirmDatasetImport();
+                stage = Stage.DatasetImport;
+                BuildStage();
             }
 #if UNITY_EDITOR || SLABLAB_FLAT
             panelCanvas.gameObject.SetActive(true);
