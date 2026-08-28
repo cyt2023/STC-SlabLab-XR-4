@@ -1,0 +1,1 @@
+E:\Environments\R2IFNO\python.exe E:\R2IFNO\With_Tide_Phase\scripts\export_ground_truth_hkt_events.py --output-dir E:\R2IFNO\GT
