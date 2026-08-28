@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "started_at_utc": "2026-08-14T12:17:50.851558Z",
+  "completed_at_utc": "2026-08-14T12:18:23.692969Z",
+  "elapsed_seconds": 32.8452946000034,
+  "time_interpretation": "Each requested date range is an inclusive full HKT hourly interval; HKT is UTC+08:00.",
+  "total_events": 6,
+  "total_prediction_hours": 672,
+  "device": "cpu",
+  "environment": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.15 | packaged by conda-forge | (main, Jun 11 2026, 03:27:10) [MSC v.1944 64 bit (AMD64)]",
+    "python_executable": "E:\\Environments\\R2IFNO\\python.exe",
+    "torch": "2.7.0+cu128",
+    "torch_cuda": "12.8",
+    "cuda_available": true,
+    "gpu": null,
+    "numpy": "2.4.6",
+    "h5py": "3.16.0"
+  },
+  "provenance": {
+    "script": "E:\\R2IFNO\\With_Tide_Phase\\scripts\\infer_hkt_event_ranges.py",
+    "script_sha256": "2026b482d65faaad7c825de98aa3b257bf20476f1ceb01421cbddab0946efa9c",
+    "config": "E:\\R2IFNO\\With_Tide_Phase\\configs\\r2ifno_lr_1e-4_afno_tide_phase_twohead_hs2_train1970_2020_val2021_2022.yaml",
+    "config_sha256": "400cbb594c7f25dc0118effe95f6427cf718a2856cf14c3989ecf6b44427de6f",
+    "run_config_snapshot": "E:\\R2IFNO\\With_Tide_Phase\\Outputs\\tide_phase_afno_twohead_hs2_train1970_2020_val2021_2022\\run\\config_used.yaml",
+    "run_config_snapshot_sha256": "fe24fcd45bee9a8713fd631a98d164f94c19a55a1a63febe5d5ed2017ab4e9bd",
+    "checkpoint": "E:\\R2IFNO\\With_Tide_Phase\\Outputs\\tide_phase_afno_twohead_hs2_train1970_2020_val2021_2022\\run\\best.pt",
+    "checkpoint_sha256": "5c35613ba835636cecdfee2bbd0fe101622fa143eebb4bfe45c186020264496b",
+    "checkpoint_metadata": {
+      "epoch": 1,
+      "metrics": {
+        "train_loss": 0.015865667501219746,
+        "val_loss": 0.01811154069236029,
+        "val_hs_rmse": 0.12045868240188812,
+        "val_Water_Level_rmse": 0.26621436661690884
+      },
+      "patch_embed_shape": [
+        64,
+        180,
+        1,
+        1
+      ]
+    },
+    "normalization": "E:\\R2IFNO\\outputs\\normalization\\normalization_stats_train_1970_2020.json",
+    "normalization_sha256": "b05e03b00d04ab6aab71ca75bdf0f891ffbe3b5663f5000e0c7a6b2e59b25fc4",
+    "mesh": "E:\\R2IFNO\\Data\\Nodes_info\\node_infos_hk_region.mat",
+    "mesh_sha256": "3b9bb60db6f698ae7da210d4d4188cda8b7aafc4f6a497dcbeb01707f87e7aec",
+    "static_node_features": "E:\\R2IFNO\\Data\\Nodes_info\\static_node_features.pt",
+    "static_node_features_sha256": "d4ab52a28fbaea4e358409232e3aa6b2365e3c044085f9d9637940ed2a683fea",
+    "input_sources": [
+      {
+        "directory": "E:\\R2IFNO\\Data\\Train_npy\\Input\\forcing_grid_train_1970_2021",
+        "files": {
+          "c.npy": {
+            "path": "E:\\R2IFNO\\Data\\Train_npy\\Input\\forcing_grid_train_1970_2021\\c.npy",
+            "size_bytes": 5697900128,
+            "mtime_utc": "2026-06-18T06:23:28.924757Z",
+            "sha256": null,
+            "sha256_note": "not hashed because this source array is multi-gigabyte"
+          },
+          "time_unix_hours.npy": {
+            "path": "E:\\R2IFNO\\Data\\Train_npy\\Input\\forcing_grid_train_1970_2021\\time_unix_hours.npy",
+            "size_bytes": 3646784,
+            "mtime_utc": "2026-06-18T06:23:40.139564Z",
+            "sha256": "dcf169b05d728325fda358b887eb76883fc803010a6b5d0ba37a0e4fb921bd98"
+          },
+          "x.npy": {
+            "path": "E:\\R2IFNO\\Data\\Train_npy\\Input\\forcing_grid_train_1970_2021\\x.npy",
+            "size_bytes": 5128,
+            "mtime_utc": "2026-06-18T06:23:40.161565Z",
+            "sha256": "0d97df15567bbdef87a4202106edcf42b7e2ceb574c358ad5f6d1a2fc130914a"
+          }
+        }
+      },
+      {
+        "directory": "E:\\R2IFNO\\Data\\Validate_npy\\Input\\forcing_grid_output_2022",
+        "files": {
+          "c.npy": {
+            "path": "E:\\R2IFNO\\Data\\Validate_npy\\Input\\forcing_grid_output_2022\\c.npy",
+            "size_bytes": 109500128,
+            "mtime_utc": "2026-06-20T07:29:56.340259Z",
+            "sha256": null,
+            "sha256_note": "not hashed because this source array is multi-gigabyte"
+          },
+          "time_unix_hours.npy": {
+            "path": "E:\\R2IFNO\\Data\\Validate_npy\\Input\\forcing_grid_output_2022\\time_unix_hours.npy",
+            "size_bytes": 70208,
+            "mtime_utc": "2026-06-20T07:29:56.562447Z",
+            "sha256": "d152092aa21399abacd9b77da7350413863478416c1414f5e898b9658f9066da"
+          },
+          "x.npy": {
+            "path": "E:\\R2IFNO\\Data\\Validate_npy\\Input\\forcing_grid_output_2022\\x.npy",
+            "size_bytes": 5128,
+            "mtime_utc": "2026-06-20T07:29:56.570454Z",
+            "sha256": "0d97df15567bbdef87a4202106edcf42b7e2ceb574c358ad5f6d1a2fc130914a"
+          }
+        }
+      }
+    ],
+    "history_steps": 12,
+    "lead_hours": 0,
+    "model_input_shape_per_sample": [
+      12,
+      15,
+      25,
+      25
+    ],
+    "prediction_axis_order": "time,node,channel",
+    "prediction_channels": [
+      "HS",
+      "Water_Level"
+    ],
+    "prediction_units": [
+      "m",
+      "m"
+    ]
+  },
+  "event_specs": [
+    {
+      "index": 1,
+      "event_id": "normal_stable_weather_20210421_20210423",
+      "event_type_zh": "正常/平稳天气",
+      "start_hkt": "2021-04-21T00:00:00",
+      "end_hkt": "2021-04-23T23:00:00"
+    },
+    {
+      "index": 2,
+      "event_id": "persistent_heavy_rain_20210622_20210629",
+      "event_type_zh": "持续强降雨",
+      "start_hkt": "2021-06-22T00:00:00",
+      "end_hkt": "2021-06-29T23:00:00"
+    },
+    {
+      "index": 3,
+      "event_id": "kompasu_typhoon_storm_surge_20211011_20211014",
+      "event_type_zh": "Kompasu，强台风/风暴增水",
+      "start_hkt": "2021-10-11T00:00:00",
+      "end_hkt": "2021-10-14T23:00:00"
+    },
+    {
+      "index": 4,
+      "event_id": "normal_unstable_weather_20220308_20220312",
+      "event_type_zh": "正常/不稳定天气",
+      "start_hkt": "2022-03-08T00:00:00",
+      "end_hkt": "2022-03-12T23:00:00"
+    },
+    {
+      "index": 5,
+      "event_id": "non_typhoon_monsoon_gale_20220927_20220929",
+      "event_type_zh": "非台风季风大风",
+      "start_hkt": "2022-09-27T00:00:00",
+      "end_hkt": "2022-09-29T23:00:00"
+    },
+    {
+      "index": 6,
+      "event_id": "nalgae_monsoon_compound_typhoon_20221030_20221103",
+      "event_type_zh": "Nalgae + 季风，复合台风事件",
+      "start_hkt": "2022-10-30T00:00:00",
+      "end_hkt": "2022-11-03T23:00:00"
+    }
+  ],
+  "events": [
+    {
+      "event_index": 1,
+      "event_id": "normal_stable_weather_20210421_20210423",
+      "event_type_zh": "正常/平稳天气",
+      "target_hkt_start": "2021-04-21T00:00:00+08:00",
+      "target_hkt_end": "2021-04-23T23:00:00+08:00",
+      "target_utc_start": "2021-04-20T16:00:00Z",
+      "target_utc_end": "2021-04-23T15:00:00Z",
+      "forcing_utc_start": "2021-04-20T05:00:00Z",
+      "forcing_utc_end": "2021-04-23T15:00:00Z",
+      "prediction_hours": 72,
+      "forcing_hours": 83,
+      "first_unix_hour": 449704,
+      "last_unix_hour": 449775,
+      "prediction_file": "event_01_normal_stable_weather_20210421_20210423.h5",
+      "prediction_file_sha256": "4ab523a943a44be108737517267e4aca95e39d429d8361a6879f0f3ea661d199",
+      "time_index_file": "event_01_normal_stable_weather_20210421_20210423_time_index.csv",
+      "prediction_shape": [
+        72,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.00904545746743679,
+          "max": 1.484445333480835,
+          "mean": 0.3295974384613477
+        },
+        "Water_Level": {
+          "min": -2.4279301166534424,
+          "max": 2.4590911865234375,
+          "mean": 0.04518068338831445
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 4.296550600003684
+    },
+    {
+      "event_index": 2,
+      "event_id": "persistent_heavy_rain_20210622_20210629",
+      "event_type_zh": "持续强降雨",
+      "target_hkt_start": "2021-06-22T00:00:00+08:00",
+      "target_hkt_end": "2021-06-29T23:00:00+08:00",
+      "target_utc_start": "2021-06-21T16:00:00Z",
+      "target_utc_end": "2021-06-29T15:00:00Z",
+      "forcing_utc_start": "2021-06-21T05:00:00Z",
+      "forcing_utc_end": "2021-06-29T15:00:00Z",
+      "prediction_hours": 192,
+      "forcing_hours": 203,
+      "first_unix_hour": 451192,
+      "last_unix_hour": 451383,
+      "prediction_file": "event_02_persistent_heavy_rain_20210622_20210629.h5",
+      "prediction_file_sha256": "61774b52bb1abaf769619ec35a5f1d743067ba7762869bfcce701c69f87ba6bd",
+      "time_index_file": "event_02_persistent_heavy_rain_20210622_20210629_time_index.csv",
+      "prediction_shape": [
+        192,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.01005167979747057,
+          "max": 2.068241834640503,
+          "mean": 0.5237790111624825
+        },
+        "Water_Level": {
+          "min": -2.4831550121307373,
+          "max": 2.8649544715881348,
+          "mean": -0.02461313743900125
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 9.266160300001502
+    },
+    {
+      "event_index": 3,
+      "event_id": "kompasu_typhoon_storm_surge_20211011_20211014",
+      "event_type_zh": "Kompasu，强台风/风暴增水",
+      "target_hkt_start": "2021-10-11T00:00:00+08:00",
+      "target_hkt_end": "2021-10-14T23:00:00+08:00",
+      "target_utc_start": "2021-10-10T16:00:00Z",
+      "target_utc_end": "2021-10-14T15:00:00Z",
+      "forcing_utc_start": "2021-10-10T05:00:00Z",
+      "forcing_utc_end": "2021-10-14T15:00:00Z",
+      "prediction_hours": 96,
+      "forcing_hours": 107,
+      "first_unix_hour": 453856,
+      "last_unix_hour": 453951,
+      "prediction_file": "event_03_kompasu_typhoon_storm_surge_20211011_20211014.h5",
+      "prediction_file_sha256": "45d94f80dec9e89764be48383311c55056ca7abdc765a818050d84e94477ad4b",
+      "time_index_file": "event_03_kompasu_typhoon_storm_surge_20211011_20211014_time_index.csv",
+      "prediction_shape": [
+        96,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.010401674546301365,
+          "max": 5.432012557983398,
+          "mean": 0.9864433185243398
+        },
+        "Water_Level": {
+          "min": -2.4292352199554443,
+          "max": 2.7888894081115723,
+          "mean": 0.2323050213228736
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 4.343466400023317
+    },
+    {
+      "event_index": 4,
+      "event_id": "normal_unstable_weather_20220308_20220312",
+      "event_type_zh": "正常/不稳定天气",
+      "target_hkt_start": "2022-03-08T00:00:00+08:00",
+      "target_hkt_end": "2022-03-12T23:00:00+08:00",
+      "target_utc_start": "2022-03-07T16:00:00Z",
+      "target_utc_end": "2022-03-12T15:00:00Z",
+      "forcing_utc_start": "2022-03-07T05:00:00Z",
+      "forcing_utc_end": "2022-03-12T15:00:00Z",
+      "prediction_hours": 120,
+      "forcing_hours": 131,
+      "first_unix_hour": 457408,
+      "last_unix_hour": 457527,
+      "prediction_file": "event_04_normal_unstable_weather_20220308_20220312.h5",
+      "prediction_file_sha256": "2ae22525ae9512a754ee11b3ac1f38f81a8ba5a28478ed0f11fe6088d619d903",
+      "time_index_file": "event_04_normal_unstable_weather_20220308_20220312_time_index.csv",
+      "prediction_shape": [
+        120,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.009240562096238136,
+          "max": 1.9751006364822388,
+          "mean": 0.5023334027253501
+        },
+        "Water_Level": {
+          "min": -2.403803825378418,
+          "max": 2.7447493076324463,
+          "mean": 0.1484773034524201
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 5.662027999991551
+    },
+    {
+      "event_index": 5,
+      "event_id": "non_typhoon_monsoon_gale_20220927_20220929",
+      "event_type_zh": "非台风季风大风",
+      "target_hkt_start": "2022-09-27T00:00:00+08:00",
+      "target_hkt_end": "2022-09-29T23:00:00+08:00",
+      "target_utc_start": "2022-09-26T16:00:00Z",
+      "target_utc_end": "2022-09-29T15:00:00Z",
+      "forcing_utc_start": "2022-09-26T05:00:00Z",
+      "forcing_utc_end": "2022-09-29T15:00:00Z",
+      "prediction_hours": 72,
+      "forcing_hours": 83,
+      "first_unix_hour": 462280,
+      "last_unix_hour": 462351,
+      "prediction_file": "event_05_non_typhoon_monsoon_gale_20220927_20220929.h5",
+      "prediction_file_sha256": "0dae400cb193b6a008266173b04ef79c57228b5b7cedac70c6245169d7080dd5",
+      "time_index_file": "event_05_non_typhoon_monsoon_gale_20220927_20220929_time_index.csv",
+      "prediction_shape": [
+        72,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.01156160980463028,
+          "max": 2.944963216781616,
+          "mean": 0.8788292676986129
+        },
+        "Water_Level": {
+          "min": -2.426126718521118,
+          "max": 2.9671730995178223,
+          "mean": 0.2580979359930535
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 3.3739888000127394
+    },
+    {
+      "event_index": 6,
+      "event_id": "nalgae_monsoon_compound_typhoon_20221030_20221103",
+      "event_type_zh": "Nalgae + 季风，复合台风事件",
+      "target_hkt_start": "2022-10-30T00:00:00+08:00",
+      "target_hkt_end": "2022-11-03T23:00:00+08:00",
+      "target_utc_start": "2022-10-29T16:00:00Z",
+      "target_utc_end": "2022-11-03T15:00:00Z",
+      "forcing_utc_start": "2022-10-29T05:00:00Z",
+      "forcing_utc_end": "2022-11-03T15:00:00Z",
+      "prediction_hours": 120,
+      "forcing_hours": 131,
+      "first_unix_hour": 463072,
+      "last_unix_hour": 463191,
+      "prediction_file": "event_06_nalgae_monsoon_compound_typhoon_20221030_20221103.h5",
+      "prediction_file_sha256": "9ef137479a4d9e0d46f485eda960dd227767b051e057d7e5f1374b84be0fe876",
+      "time_index_file": "event_06_nalgae_monsoon_compound_typhoon_20221030_20221103_time_index.csv",
+      "prediction_shape": [
+        120,
+        7364,
+        2
+      ],
+      "prediction_dtype": "float32",
+      "prediction_summary": {
+        "HS": {
+          "min": 0.009997889399528503,
+          "max": 4.093855381011963,
+          "mean": 0.8676764488593722
+        },
+        "Water_Level": {
+          "min": -2.4606573581695557,
+          "max": 2.790217876434326,
+          "mean": 0.3421474117031111
+        }
+      },
+      "verification": {
+        "exact_memory_roundtrip": true,
+        "finite": true,
+        "hourly_time_axis": true,
+        "continuous_12_hour_windows": true,
+        "mesh_nodes": 7364,
+        "mesh_faces": 13445,
+        "nodes_referenced_by_faces": 7357
+      },
+      "elapsed_seconds": 5.488994100014679
+    }
+  ]
+}

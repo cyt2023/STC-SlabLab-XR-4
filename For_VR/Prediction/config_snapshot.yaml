@@ -1,0 +1,83 @@
+seed: 42
+device: auto
+data:
+  train_input: ../../Data/Train_npy/Input/forcing_grid_train_1970_2021
+  train_output: ../../Data/Train_npy/Output/HS_WatLev_train_1970_2021
+  train_time_start: 0
+  train_time_end: 447071
+  validate_input:
+  - ../../Data/Train_npy/Input/forcing_grid_train_1970_2021
+  - ../../Data/Validate_npy/Input/forcing_grid_output_2022
+  validate_output:
+  - ../../Data/Train_npy/Output/HS_WatLev_train_1970_2021
+  - ../../Data/Validate_npy/Output/HS_WatLev_validate_2022
+  validate_time_start: 447072
+  validate_time_end: 464063
+  history_steps: 12
+  lead_hours: 0
+  input_channels:
+  - 0
+  - 1
+  - 2
+  input_features:
+  - uwind
+  - vwind
+  - wind_speed
+  - pressure_anomaly
+  - pressure_deficit
+  - wind_stress_x
+  - wind_stress_y
+  time_phase_features:
+  - hour_of_day
+  - annual
+  - M2
+  - K1
+  input_normalization_path: ../../outputs/normalization/normalization_stats_train_1970_2020.json
+  target_normalization_path: ../../outputs/normalization/normalization_stats_train_1970_2020.json
+  static_node_features_path: ../../Data/Nodes_info/static_node_features.pt
+  mesh_info_path: ../../Data/Nodes_info/node_infos_hk_region.mat
+  fill_value_threshold: 1.0e20
+  target_fill_value_threshold: null
+  max_train_samples: null
+  max_validate_samples: null
+model:
+  model_module: r2ifno.Model.Model_twohead_AFNO
+  decoder_head_type: two_head
+  in_channels: 15
+  out_channels: 2
+  node_static_dim: 5
+  history_steps: 12
+  latent_channels: 64
+  hidden_channels: 64
+  n_modes:
+  - 12
+  - 12
+  static_width: 64
+  decoder_width: 128
+  decoder_depth: 4
+  coordinate_frequencies: 4
+  graph_layers: 1
+  edge_attr_dim: 3
+  dropout: 0.05
+  padding: 0.0
+  enforce_positive_hs: auto
+train:
+  use_validation: true
+  batch_size: 16
+  num_workers: 0
+  epochs: 20
+  learning_rate: 0.0001
+  weight_decay: 0.001
+  hs_weight: 2.0
+  Water_Level_weight: 1.0
+  log_every_steps: 100
+  validate_every_epochs: 1
+  max_train_steps_per_epoch: null
+  max_validate_steps: null
+  early_stopping:
+    enabled: true
+    monitor: val_loss
+    patience: 5
+    min_delta: 0.0
+    start_epoch: 1
+  checkpoint_dir: ../Outputs

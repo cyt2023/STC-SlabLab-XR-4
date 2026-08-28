@@ -1,0 +1,1 @@
+E:\Environments\R2IFNO\python.exe E:\R2IFNO\With_Tide_Phase\scripts\infer_hkt_event_ranges.py --device cpu --batch-size 16 --output-root E:\R2IFNO\For_VR_Prediction
