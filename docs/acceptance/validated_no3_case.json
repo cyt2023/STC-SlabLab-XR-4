@@ -1,0 +1,95 @@
+{
+  "snapshotId": "67136421aff34ceb8e8c43689311b9f5",
+  "datasetId": "hong_kong_ocean_encoded_v1",
+  "variableId": "NO3",
+  "unit": "encoded_intensity",
+  "question": "Where and when does NO3 encoded intensity change most?",
+  "digest": {
+    "headline": "DISTRIBUTION DIGEST",
+    "summary": "For NO3, Before time at Deep depth has the highest mean (12.56 encoded_intensity), while After time at Middle depth has the lowest (5.481 encoded_intensity). Across time periods, Before is higher on average than After. Across depth regions, Surface is higher on average than Middle.",
+    "findings": [
+      "NO3: Across time periods, Before is higher on average than After. Across depth regions, Surface is higher on average than Middle.",
+      "NO3 is highest on average in Before time at Deep depth (12.56 encoded_intensity).",
+      "NO3 is lowest on average in After time at Middle depth (5.481 encoded_intensity).",
+      "NO3 varies most within After time at Surface depth; its observed range is 245.1 encoded_intensity."
+    ],
+    "highestCell": "before__deep",
+    "lowestCell": "after__middle",
+    "widestCell": "after__surface",
+    "analyticTask": "characterize_distribution",
+    "rawIntent": "Generate a bar chart for each Time x Depth cell.",
+    "generatedBy": "deterministic",
+    "validCellCount": 9,
+    "excludedCellCount": 0
+  },
+  "timeChangesPercent": {
+    "surface": -9.039050765012139,
+    "middle": -18.771359250914468,
+    "deep": -31.24593874873987
+  },
+  "coverage": {
+    "before__surface": 0.38922067271352984,
+    "during__surface": 0.389215589569161,
+    "after__surface": 0.38921761148904005,
+    "before__middle": 0.1925160193109502,
+    "during__middle": 0.1925159827371809,
+    "after__middle": 0.19251662277814352,
+    "before__deep": 0.03371245275888133,
+    "during__deep": 0.03371334089191232,
+    "after__deep": 0.03371341647770219
+  },
+  "ground": {
+    "verified": false,
+    "cellId": "before__surface"
+  },
+  "chartIntents": [
+    {
+      "prompt": "Generate a heatmap",
+      "expected": "horizontal_heatmap",
+      "actual": "horizontal_heatmap",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a bar chart",
+      "expected": "bar_chart",
+      "actual": "bar_chart",
+      "passed": true
+    },
+    {
+      "prompt": "Show a histogram",
+      "expected": "histogram",
+      "actual": "histogram",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a scatter plot",
+      "expected": "scatter_plot",
+      "actual": "scatter_plot",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a line chart",
+      "expected": "line_chart",
+      "actual": "line_chart",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a pie chart",
+      "expected": "pie_chart",
+      "actual": "pie_chart",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a box plot",
+      "expected": "box_plot",
+      "actual": "box_plot",
+      "passed": true
+    },
+    {
+      "prompt": "Generate a violin plot",
+      "expected": "violin_plot",
+      "actual": "violin_plot",
+      "passed": true
+    }
+  ]
+}

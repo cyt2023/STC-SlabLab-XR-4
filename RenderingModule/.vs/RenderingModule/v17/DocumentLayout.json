@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Research\\Project\\3D Air Pollution\\code\\VolumeSTCube\\RenderingModule\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C2C6448F-4219-C48B-C30A-44FDA1D14C62}|Assembly-CSharp-Editor.csproj|d:\\research\\project\\3d air pollution\\code\\volumestcube\\renderingmodule\\assets\\editor\\volumerenderereditorfunctions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C2C6448F-4219-C48B-C30A-44FDA1D14C62}|Assembly-CSharp-Editor.csproj|solutionrelative:assets\\editor\\volumerenderereditorfunctions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8A5A7730-CCC4-EED9-9F3B-7AF7EDA7CCFE}|Assembly-CSharp.csproj|d:\\research\\project\\3d air pollution\\code\\volumestcube\\renderingmodule\\assets\\scripts\\volumeobject\\volumecontrollerobject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8A5A7730-CCC4-EED9-9F3B-7AF7EDA7CCFE}|Assembly-CSharp.csproj|solutionrelative:assets\\scripts\\volumeobject\\volumecontrollerobject.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "VolumeRendererEditorFunctions.cs",
+              "DocumentMoniker": "D:\\Research\\Project\\3D Air Pollution\\code\\VolumeSTCube\\RenderingModule\\Assets\\Editor\\VolumeRendererEditorFunctions.cs",
+              "RelativeDocumentMoniker": "Assets\\Editor\\VolumeRendererEditorFunctions.cs",
+              "ToolTip": "D:\\Research\\Project\\3D Air Pollution\\code\\VolumeSTCube\\RenderingModule\\Assets\\Editor\\VolumeRendererEditorFunctions.cs",
+              "RelativeToolTip": "Assets\\Editor\\VolumeRendererEditorFunctions.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAJwBAAAFAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-05T04:15:46.724Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "VolumeControllerObject.cs",
+              "DocumentMoniker": "D:\\Research\\Project\\3D Air Pollution\\code\\VolumeSTCube\\RenderingModule\\Assets\\Scripts\\VolumeObject\\VolumeControllerObject.cs",
+              "RelativeDocumentMoniker": "Assets\\Scripts\\VolumeObject\\VolumeControllerObject.cs",
+              "ToolTip": "D:\\Research\\Project\\3D Air Pollution\\code\\VolumeSTCube\\RenderingModule\\Assets\\Scripts\\VolumeObject\\VolumeControllerObject.cs",
+              "RelativeToolTip": "Assets\\Scripts\\VolumeObject\\VolumeControllerObject.cs",
+              "ViewState": "AQIAAEoAAAAAAAAAAABOwFoAAABkAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-04T09:33:25.978Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

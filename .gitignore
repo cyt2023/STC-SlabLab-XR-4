@@ -1,0 +1,29 @@
+# Local scientific datasets (too large for GitHub)
+/OneDrive_1_4-30-2026/
+
+# Local builds and install packages
+/Builds/
+*.apk
+*.aab
+
+# Runtime-saved Unity scene containing embedded volume data
+/RenderingModule/Assets/1.unity
+/RenderingModule/Assets/1.unity.meta
+
+# Python caches
+/.venv/
+**/__pycache__/
+*.py[cod]
+
+# Workspace and editor caches
+**/.vs/
+**/Library/
+**/Temp/
+**/Logs/
+**/UserSettings/
+*.log
+*.csproj
+*.sln
+
+# Local S4D analysis jobs and test artifacts
+/.runtime/

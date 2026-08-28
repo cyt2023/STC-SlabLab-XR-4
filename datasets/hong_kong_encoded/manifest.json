@@ -1,0 +1,829 @@
+{
+  "schemaVersion": "1.0",
+  "datasetId": "hong_kong_ocean_encoded_v1",
+  "datasetVersion": "local-raw-2026-07-24",
+  "dimensions": {
+    "x": 400,
+    "y": 441,
+    "z": 92
+  },
+  "storageOrder": "ZYX",
+  "defaultVoxelType": "uint8",
+  "coordinates": {
+    "x": {
+      "kind": "ordinal_index",
+      "unit": "x_index",
+      "start": 0,
+      "step": 1
+    },
+    "y": {
+      "kind": "ordinal_index",
+      "unit": "y_index",
+      "start": 0,
+      "step": 1
+    },
+    "depth": {
+      "kind": "ordinal_index",
+      "unit": "depth_index",
+      "start": 0,
+      "step": 1,
+      "positive": "down",
+      "excludedIndices": [
+        91
+      ]
+    }
+  },
+  "variables": {
+    "chlorophyll": {
+      "displayName": "Chlorophyll",
+      "unit": "encoded_intensity",
+      "valueSemantics": "encoded_intensity",
+      "voxelType": "uint8",
+      "scale": 1.0,
+      "offset": 0.0,
+      "missingRawValues": [
+        0
+      ],
+      "frames": [
+        {
+          "frameId": "chlorophyll_t000",
+          "timeIndex": 0,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_0_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t001",
+          "timeIndex": 1,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_1_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t002",
+          "timeIndex": 2,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_2_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t003",
+          "timeIndex": 3,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_3_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t004",
+          "timeIndex": 4,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_4_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t005",
+          "timeIndex": 5,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_5_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t006",
+          "timeIndex": 6,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_6_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t007",
+          "timeIndex": 7,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_7_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t008",
+          "timeIndex": 8,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_8_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t009",
+          "timeIndex": 9,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_9_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t010",
+          "timeIndex": 10,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_10_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t011",
+          "timeIndex": 11,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_11_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t012",
+          "timeIndex": 12,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_12_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t013",
+          "timeIndex": 13,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_13_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t014",
+          "timeIndex": 14,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_14_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t015",
+          "timeIndex": 15,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_15_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t016",
+          "timeIndex": 16,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_16_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t017",
+          "timeIndex": 17,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_17_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t018",
+          "timeIndex": 18,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_18_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t019",
+          "timeIndex": 19,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_19_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t020",
+          "timeIndex": 20,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_20_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t021",
+          "timeIndex": 21,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_21_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t022",
+          "timeIndex": 22,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_22_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t023",
+          "timeIndex": 23,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_23_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t024",
+          "timeIndex": 24,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_24_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t025",
+          "timeIndex": 25,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_25_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t026",
+          "timeIndex": 26,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_26_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t027",
+          "timeIndex": 27,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_27_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t028",
+          "timeIndex": 28,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_28_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "chlorophyll_t029",
+          "timeIndex": 29,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/chlorophyll/volume_chlorophyll_data_time_29_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        }
+      ]
+    },
+    "NO3": {
+      "displayName": "NO3",
+      "unit": "encoded_intensity",
+      "valueSemantics": "encoded_intensity",
+      "voxelType": "uint8",
+      "scale": 1.0,
+      "offset": 0.0,
+      "missingRawValues": [
+        0
+      ],
+      "frames": [
+        {
+          "frameId": "NO3_t000",
+          "timeIndex": 0,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_0_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t001",
+          "timeIndex": 1,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_1_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t002",
+          "timeIndex": 2,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_2_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t003",
+          "timeIndex": 3,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_3_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t004",
+          "timeIndex": 4,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_4_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t005",
+          "timeIndex": 5,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_5_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t006",
+          "timeIndex": 6,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_6_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t007",
+          "timeIndex": 7,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_7_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t008",
+          "timeIndex": 8,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_8_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t009",
+          "timeIndex": 9,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_9_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t010",
+          "timeIndex": 10,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_10_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t011",
+          "timeIndex": 11,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_11_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t012",
+          "timeIndex": 12,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_12_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t013",
+          "timeIndex": 13,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_13_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t014",
+          "timeIndex": 14,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_14_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t015",
+          "timeIndex": 15,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_15_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t016",
+          "timeIndex": 16,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_16_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t017",
+          "timeIndex": 17,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_17_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t018",
+          "timeIndex": 18,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_18_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t019",
+          "timeIndex": 19,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_19_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t020",
+          "timeIndex": 20,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_20_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t021",
+          "timeIndex": 21,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_21_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t022",
+          "timeIndex": 22,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_22_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t023",
+          "timeIndex": 23,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_23_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t024",
+          "timeIndex": 24,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_24_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t025",
+          "timeIndex": 25,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_25_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t026",
+          "timeIndex": 26,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_26_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t027",
+          "timeIndex": 27,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_27_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t028",
+          "timeIndex": 28,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_28_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "NO3_t029",
+          "timeIndex": 29,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/NO3/volume_NO3_data_time_29_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        }
+      ]
+    },
+    "salt": {
+      "displayName": "Salinity",
+      "unit": "encoded_intensity",
+      "valueSemantics": "encoded_intensity",
+      "voxelType": "uint8",
+      "scale": 1.0,
+      "offset": 0.0,
+      "missingRawValues": [
+        0
+      ],
+      "frames": [
+        {
+          "frameId": "salt_t000",
+          "timeIndex": 0,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_0_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t001",
+          "timeIndex": 1,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_1_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t002",
+          "timeIndex": 2,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_2_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t003",
+          "timeIndex": 3,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_3_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t004",
+          "timeIndex": 4,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_4_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t005",
+          "timeIndex": 5,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_5_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t006",
+          "timeIndex": 6,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_6_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t007",
+          "timeIndex": 7,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_7_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t008",
+          "timeIndex": 8,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_8_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t009",
+          "timeIndex": 9,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_9_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t010",
+          "timeIndex": 10,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_10_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t011",
+          "timeIndex": 11,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_11_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t012",
+          "timeIndex": 12,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_12_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t013",
+          "timeIndex": 13,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_13_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t014",
+          "timeIndex": 14,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_14_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t015",
+          "timeIndex": 15,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_15_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t016",
+          "timeIndex": 16,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_16_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t017",
+          "timeIndex": 17,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_17_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t018",
+          "timeIndex": 18,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_18_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t019",
+          "timeIndex": 19,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_19_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t020",
+          "timeIndex": 20,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_20_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t021",
+          "timeIndex": 21,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_21_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t022",
+          "timeIndex": 22,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_22_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t023",
+          "timeIndex": 23,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_23_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t024",
+          "timeIndex": 24,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_24_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t025",
+          "timeIndex": 25,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_25_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t026",
+          "timeIndex": 26,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_26_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t027",
+          "timeIndex": 27,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_27_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t028",
+          "timeIndex": 28,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_28_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        },
+        {
+          "frameId": "salt_t029",
+          "timeIndex": 29,
+          "temporalMeaning": "instantaneous",
+          "path": "../../OneDrive_1_4-30-2026/salt/volume_salt_data_time_29_255.raw",
+          "expectedBytes": 16228800,
+          "sha256": null
+        }
+      ]
+    }
+  },
+  "assumptions": [
+    {
+      "id": "encoded-values",
+      "statement": "Values 1-254 are encoded intensities, not physical units.",
+      "evidence": "All files are uint8; no scale, offset, or physical unit metadata exists.",
+      "status": "measured"
+    },
+    {
+      "id": "zero-invalid",
+      "statement": "Raw value 0 is treated as invalid/masked.",
+      "evidence": "All variables share the same zero mask at each ordinal time; valid values begin at 5.",
+      "status": "inferred"
+    },
+    {
+      "id": "ordinal-time",
+      "statement": "Files are ordered by time index 0-29 without claiming timestamps.",
+      "evidence": "File names contain a complete unique _time_N_ sequence and no timestamps.",
+      "status": "measured"
+    },
+    {
+      "id": "depth-order",
+      "statement": "Depth indices 0-90 increase downward; index 91 is excluded.",
+      "evidence": "Valid horizontal coverage decreases from index 0 through 90; index 91 breaks that pattern.",
+      "status": "inferred"
+    },
+    {
+      "id": "storage-order",
+      "statement": "RAW is interpreted as C-order ZYX.",
+      "evidence": "This reproduces coherent XY layers and matches the existing Unity reader.",
+      "status": "inferred"
+    }
+  ]
+}

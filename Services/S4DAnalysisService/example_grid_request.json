@@ -1,0 +1,52 @@
+{
+  "datasetId": "hong_kong_ocean_encoded_v1",
+  "variableId": "chlorophyll",
+  "timeBuckets": [
+    {
+      "id": "before",
+      "label": "Before - t00-t09",
+      "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    },
+    {
+      "id": "during",
+      "label": "During - t10-t19",
+      "indices": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    },
+    {
+      "id": "after",
+      "label": "After - t20-t29",
+      "indices": [20, 21, 22, 23, 24, 25, 26, 27, 28, 29]
+    }
+  ],
+  "depthBuckets": [
+    {
+      "id": "surface",
+      "label": "Surface - z00-z09",
+      "indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    },
+    {
+      "id": "middle",
+      "label": "Middle - z10-z29",
+      "indices": [
+        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+      ]
+    },
+    {
+      "id": "deep",
+      "label": "Deep - z30-z90",
+      "indices": [
+        30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+        40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+        50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+        60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+        70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+        80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90
+      ]
+    }
+  ],
+  "chartType": "horizontal_heatmap",
+  "colorMap": "viridis",
+  "missingPolicy": "exclude",
+  "scalePolicy": "shared_across_grid"
+}
