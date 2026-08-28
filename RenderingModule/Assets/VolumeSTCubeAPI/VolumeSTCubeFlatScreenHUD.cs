@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 namespace UnityVolumeRendering
 {
@@ -11,9 +12,11 @@ namespace UnityVolumeRendering
     /// </summary>
     public sealed class VolumeSTCubeFlatScreenHUD : MonoBehaviour
     {
+        private static VolumeSTCubeFlatScreenHUD activeHud;
         private VolumeSTCubeQuestSpatialWorkbench workbench;
         private RectTransform safeAreaRoot;
         private GameObject helpPanel;
+        private GraphicRaycaster hudRaycaster;
         private Rect lastSafeArea;
         private Vector2Int lastScreenSize;
 
@@ -26,6 +29,7 @@ namespace UnityVolumeRendering
 
             VolumeSTCubeFlatScreenHUD hud =
                 rig.AddComponent<VolumeSTCubeFlatScreenHUD>();
+            activeHud = hud;
             hud.workbench = workbench;
             hud.Build();
         }
@@ -41,6 +45,7 @@ namespace UnityVolumeRendering
             Canvas canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = UnityEngine.RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = short.MaxValue;
+            hudRaycaster = canvasObject.GetComponent<GraphicRaycaster>();
 
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -117,6 +122,29 @@ namespace UnityVolumeRendering
                 helpPanel.SetActive(!helpPanel.activeSelf);
         }
 
+        public static bool IsPointerOverHud(Vector2 screenPosition)
+        {
+            if (EventSystem.current == null)
+                return false;
+            VolumeSTCubeFlatScreenHUD hud = activeHud;
+            if (hud == null || hud.hudRaycaster == null)
+                return false;
+
+            PointerEventData pointer = new PointerEventData(EventSystem.current)
+            {
+                position = screenPosition
+            };
+            List<RaycastResult> results = new List<RaycastResult>();
+            hud.hudRaycaster.Raycast(pointer, results);
+            return results.Count > 0;
+        }
+
+        private void OnDestroy()
+        {
+            if (activeHud == this)
+                activeHud = null;
+        }
+
         private void ApplySafeArea()
         {
             if (safeAreaRoot == null || Screen.width <= 0 || Screen.height <= 0)
@@ -169,7 +197,7 @@ namespace UnityVolumeRendering
                 typeof(CanvasRenderer), typeof(Text));
             textObject.transform.SetParent(parent, false);
             Text text = textObject.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.text = content;
             text.color = new Color(0.88f, 0.95f, 1.0f, 1.0f);
             text.fontSize = 22;

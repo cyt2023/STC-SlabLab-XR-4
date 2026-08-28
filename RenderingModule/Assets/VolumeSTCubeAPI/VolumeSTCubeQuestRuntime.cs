@@ -264,12 +264,7 @@ namespace UnityVolumeRendering
                 pointerHeld = primaryTouch.phase != TouchPhase.Ended &&
                     primaryTouch.phase != TouchPhase.Canceled;
             }
-            bool overScreenUI = EventSystem.current != null &&
-                (Input.touchCount > 0
-                    ? EventSystem.current.IsPointerOverGameObject(
-                        Input.GetTouch(0).fingerId)
-                    : EventSystem.current.IsPointerOverGameObject());
-            if (overScreenUI)
+            if (VolumeSTCubeFlatScreenHUD.IsPointerOverHud(pointerPosition))
                 pointerHeld = false;
             Ray ray = camera != null
                 ? camera.ScreenPointToRay(pointerPosition)
