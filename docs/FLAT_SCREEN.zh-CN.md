@@ -29,6 +29,16 @@ VolumeSTCube > Mode > VR
 
 ## 操作
 
+Desktop/Pad 使用固定的引导式页面，而不是 VR 的自由空间面板：
+
+```text
+第一行：当前步骤标题
+第二行：Previous / Next / Reset View / Help
+中央区域：当前步骤唯一的主要内容
+```
+
+流程依次为 `Open Dataset → Configure Field → Define Slab → Review Matrix → Analyze → Review Findings`。当前任务面板会自动完整居中，桌面模式不允许抓取或移动面板；切换步骤时，其他任务面板不会同时堆在画面中。
+
 | 功能 | 电脑 | 平板 |
 | --- | --- | --- |
 | 选择按钮/对象 | 鼠标左键 | 单指点按 |
@@ -36,9 +46,9 @@ VolumeSTCube > Mode > VR
 | 转动视角 | 鼠标右键拖动 | 双指拖动 |
 | 前后移动 | 鼠标滚轮 | 双指缩放 |
 | 平移 | `W/A/S/D`，`Shift` 加速 | — |
-| 显示/隐藏菜单 | `Tab` 或左上角 Menu | 左上角 Menu |
-| 重置布局 | 左上角 Reset | 左上角 Reset |
-| 操作说明 | `H`、`F1` 或 Help | 左上角 Help |
+| 上一步/下一步 | 顶部第二行按钮 | 顶部第二行按钮 |
+| 重置视图 | 顶部 `Reset View` | 顶部 `Reset View` |
+| 操作说明 | `H`、`F1` 或 `Help` | 顶部 `Help` |
 
 顶层 HUD 会自动避开 iPad/Android 的安全区域，并按屏幕尺寸缩放。
 

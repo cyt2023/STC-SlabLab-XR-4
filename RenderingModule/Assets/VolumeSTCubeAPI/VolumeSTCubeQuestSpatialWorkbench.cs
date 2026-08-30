@@ -647,6 +647,49 @@ namespace UnityVolumeRendering
             get { return boundaryEditActive; }
         }
 
+        public string DesktopWorkflowTitle
+        {
+            get
+            {
+                switch (stage)
+                {
+                    case Stage.DatasetImport: return "STEP 1  ·  OPEN A DATASET";
+                    case Stage.Field: return "STEP 2  ·  CONFIGURE FIELD";
+                    case Stage.Slab: return "STEP 3  ·  DEFINE THE SLAB";
+                    case Stage.Matrix: return "STEP 4  ·  REVIEW THE MATRIX";
+                    case Stage.Analyze: return "STEP 5  ·  ANALYZE";
+                    case Stage.Result: return "STEP 6  ·  REVIEW FINDINGS";
+                    default: return "STC SLABLAB";
+                }
+            }
+        }
+
+        public void DesktopPreviousStep()
+        {
+            switch (stage)
+            {
+                case Stage.Field: OpenDatasetImportStage(); break;
+                case Stage.Slab: Navigate(Stage.Field); break;
+                case Stage.Matrix: Navigate(Stage.Slab); break;
+                case Stage.Analyze: Navigate(Stage.Matrix); break;
+                case Stage.Result: Navigate(Stage.Analyze); break;
+                default: SetStatus("This is the first step."); break;
+            }
+        }
+
+        public void DesktopNextStep()
+        {
+            switch (stage)
+            {
+                case Stage.DatasetImport: ConfirmDatasetImport(); break;
+                case Stage.Field: Navigate(Stage.Slab); break;
+                case Stage.Slab: Navigate(Stage.Matrix); break;
+                case Stage.Matrix: Navigate(Stage.Analyze); break;
+                case Stage.Analyze: Navigate(Stage.Result); break;
+                default: SetStatus("This is the final step."); break;
+            }
+        }
+
         public void Initialize(Camera camera, VolumeSTCubeQuestRayInteractor interactor,
             Transform leftControllerTransform = null)
         {
@@ -1205,6 +1248,11 @@ namespace UnityVolumeRendering
 
         private void UpdatePanelGrab()
         {
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                grabbedPanel = null;
+                return;
+            }
             if (rayInteractor == null)
                 return;
             if (rayInteractor.GripPressed)
@@ -17118,7 +17166,6 @@ namespace UnityVolumeRendering
             colors.disabledColor = new Color(0.38f, 0.44f, 0.48f, 0.72f);
             colors.fadeDuration = 0.08f;
             button.colors = colors;
-
             GameObject accentObject = new GameObject("Button accent", typeof(RectTransform));
             accentObject.transform.SetParent(rect, false);
             RectTransform accentRect = accentObject.GetComponent<RectTransform>();
