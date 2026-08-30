@@ -112,6 +112,30 @@ namespace UnityVolumeRendering
 
         public bool IsPlaying => playing;
 
+        public string PlaybackButtonLabel => playing ? "PAUSE" : "PLAY";
+
+        public string PlaybackSpeedLabel =>
+            "SPEED " + PlaybackSpeeds[playbackSpeedIndex].ToString("0") + "x";
+
+        public void TogglePlayback()
+        {
+            SetPlaying(!playing);
+        }
+
+        public void CyclePlaybackSpeed()
+        {
+            playbackSpeedIndex = (playbackSpeedIndex + 1) % PlaybackSpeeds.Length;
+            UpdateSpeedText();
+            if (playing)
+                nextFrameTime = Time.unscaledTime + CurrentPlaybackInterval();
+        }
+
+        public void SetSurfaceContextVisible(bool visible)
+        {
+            if (surfaceRoot != null)
+                surfaceRoot.SetActive(visible);
+        }
+
         public void OpenCombinedXytTimeSelection()
         {
             SetPlaying(false);

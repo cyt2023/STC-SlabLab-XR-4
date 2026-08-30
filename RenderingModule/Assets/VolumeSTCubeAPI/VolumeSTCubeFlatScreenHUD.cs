@@ -17,6 +17,13 @@ namespace UnityVolumeRendering
         private RectTransform safeAreaRoot;
         private Text titleText;
         private GameObject helpPanel;
+        private GameObject bottomBar;
+        private Text bottomStatusText;
+        private Button primaryButton;
+        private Button playbackButton;
+        private Button speedButton;
+        private Button backButton;
+        private Button confirmButton;
         private GraphicRaycaster hudRaycaster;
         private readonly List<Canvas> workflowPanels = new List<Canvas>();
         private Rect lastSafeArea;
@@ -92,6 +99,41 @@ namespace UnityVolumeRendering
                 workbench.ResetVolumeLayout, 170.0f);
             CreateButton("Help", actionBar, ToggleHelp, 130.0f);
 
+            bottomBar = CreatePanel("Desktop Work Bar", safeAreaRoot,
+                new Color(0.018f, 0.043f, 0.064f, 0.985f));
+            RectTransform bottomRect = bottomBar.GetComponent<RectTransform>();
+            bottomRect.anchorMin = new Vector2(0.0f, 0.0f);
+            bottomRect.anchorMax = new Vector2(1.0f, 0.0f);
+            bottomRect.pivot = new Vector2(0.5f, 0.0f);
+            bottomRect.anchoredPosition = Vector2.zero;
+            bottomRect.sizeDelta = new Vector2(0.0f, 104.0f);
+            HorizontalLayoutGroup bottomLayout =
+                bottomBar.AddComponent<HorizontalLayoutGroup>();
+            bottomLayout.padding = new RectOffset(34, 34, 17, 17);
+            bottomLayout.spacing = 14.0f;
+            bottomLayout.childAlignment = TextAnchor.MiddleCenter;
+            bottomLayout.childForceExpandWidth = false;
+            bottomLayout.childForceExpandHeight = true;
+            bottomStatusText = CreateText(bottomRect, string.Empty);
+            LayoutElement statusLayout =
+                bottomStatusText.gameObject.AddComponent<LayoutElement>();
+            statusLayout.minWidth = 540.0f;
+            statusLayout.preferredWidth = 540.0f;
+            bottomStatusText.fontSize = 23;
+            bottomStatusText.fontStyle = FontStyle.Bold;
+            bottomStatusText.alignment = TextAnchor.MiddleLeft;
+            primaryButton = CreateButton("SET TIME RANGE", bottomRect,
+                workbench.DesktopOpenFieldSetup, 420.0f);
+            playbackButton = CreateButton("PLAY", bottomRect,
+                workbench.DesktopTogglePlayback, 150.0f);
+            speedButton = CreateButton("SPEED 1x", bottomRect,
+                workbench.DesktopCyclePlaybackSpeed, 180.0f);
+            backButton = CreateButton("BACK", bottomRect,
+                workbench.DesktopCancelBoundary, 150.0f);
+            confirmButton = CreateButton("CONFIRM TIME RANGE", bottomRect,
+                workbench.DesktopConfirmBoundary, 300.0f);
+            bottomBar.SetActive(false);
+
             helpPanel = CreatePanel("Help", safeAreaRoot,
                 new Color(0.025f, 0.04f, 0.07f, 0.98f));
             RectTransform helpRect = helpPanel.GetComponent<RectTransform>();
@@ -115,6 +157,7 @@ namespace UnityVolumeRendering
         {
             if (titleText != null && workbench != null)
                 titleText.text = workbench.DesktopWorkflowTitle;
+            RefreshBottomBar();
             if (Input.GetKeyDown(KeyCode.H) || Input.GetKeyDown(KeyCode.F1))
                 ToggleHelp();
             if (lastSafeArea != Screen.safeArea ||
@@ -125,6 +168,36 @@ namespace UnityVolumeRendering
                 nextPanelDiscoveryTime = Time.unscaledTime + 0.25f;
                 DiscoverWorkflowPanels();
             }
+        }
+
+        private void RefreshBottomBar()
+        {
+            if (bottomBar == null || workbench == null)
+                return;
+            bool visible = workbench.DesktopCompactBarActive;
+            bottomBar.SetActive(visible);
+            if (!visible)
+                return;
+            bool boundary = workbench.DesktopBoundaryBarActive;
+            bottomStatusText.gameObject.SetActive(boundary);
+            bottomStatusText.text = boundary
+                ? workbench.DesktopBoundaryRangeLabel : string.Empty;
+            primaryButton.gameObject.SetActive(!boundary);
+            playbackButton.gameObject.SetActive(boundary);
+            speedButton.gameObject.SetActive(boundary);
+            backButton.gameObject.SetActive(boundary);
+            confirmButton.gameObject.SetActive(boundary);
+            SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
+            SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
+        }
+
+        private static void SetButtonText(Button button, string value)
+        {
+            if (button == null)
+                return;
+            Text label = button.GetComponentInChildren<Text>();
+            if (label != null)
+                label.text = value;
         }
 
         private void LateUpdate()
@@ -157,16 +230,28 @@ namespace UnityVolumeRendering
             Camera camera = Camera.main;
             if (camera == null)
                 return;
-            camera.rect = new Rect(0.0f, 0.0f, 1.0f, 0.86f);
+            bool central = workbench != null &&
+                workbench.DesktopTaskPanelIsCentral;
+            camera.rect = central
+                ? new Rect(0.0f, 0.0f, 1.0f, 0.86f)
+                : new Rect(0.0f, 0.0f, 1.0f, 1.0f);
             float distance = 2.05f;
-            float verticalWorld = 2.0f * distance * Mathf.Tan(
-                camera.fieldOfView * 0.5f * Mathf.Deg2Rad) * 0.68f;
-            float horizontalWorld = verticalWorld * camera.aspect * 0.86f;
+            float viewHeight = 2.0f * distance * Mathf.Tan(
+                camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+            float verticalWorld = viewHeight * (central ? 0.68f : 0.135f);
+            float horizontalWorld = viewHeight * camera.aspect *
+                (central ? 0.86f : 0.94f);
             for (int index = 0; index < workflowPanels.Count; index++)
             {
                 Canvas panel = workflowPanels[index];
                 if (panel == null || !panel.gameObject.activeInHierarchy)
                     continue;
+                if (workbench != null && workbench.DesktopCompactBarActive)
+                {
+                    panel.enabled = false;
+                    continue;
+                }
+                panel.enabled = true;
                 RectTransform rect = panel.GetComponent<RectTransform>();
                 if (rect == null)
                     continue;
@@ -174,7 +259,7 @@ namespace UnityVolumeRendering
                     horizontalWorld / Mathf.Max(1.0f, rect.sizeDelta.x),
                     verticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
-                    new Vector3(0.5f, 0.48f, distance));
+                    new Vector3(0.5f, central ? 0.48f : 0.075f, distance));
                 panel.transform.position = centre;
                 panel.transform.rotation = Quaternion.LookRotation(
                     centre - camera.transform.position, camera.transform.up);
@@ -257,7 +342,7 @@ namespace UnityVolumeRendering
             rect.offsetMax = new Vector2(-horizontal, -vertical);
         }
 
-        private static void CreateButton(string label, Transform parent,
+        private static Button CreateButton(string label, Transform parent,
             UnityEngine.Events.UnityAction action, float width)
         {
             GameObject buttonObject = new GameObject(label, typeof(RectTransform),
@@ -276,6 +361,7 @@ namespace UnityVolumeRendering
             text.fontSize = 24;
             text.fontStyle = FontStyle.Bold;
             Stretch(text.rectTransform, 4.0f, 2.0f);
+            return button;
         }
 
         private static Text CreateText(Transform parent, string content)

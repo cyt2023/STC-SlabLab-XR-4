@@ -34,10 +34,11 @@ Desktop/Pad 使用固定的引导式页面，而不是 VR 的自由空间面板�
 ```text
 第一行：当前步骤标题
 第二行：Previous / Next / Reset View / Help
-中央区域：当前步骤唯一的主要内容
+中央区域：Field、STC、切片和分析结果
+底部工作条：当前步骤需要的交互按钮
 ```
 
-流程依次为 `Open Dataset → Configure Field → Define Slab → Review Matrix → Analyze → Review Findings`。当前任务面板会自动完整居中，桌面模式不允许抓取或移动面板；切换步骤时，其他任务面板不会同时堆在画面中。
+流程依次为 `Open Dataset → Configure Field → Define Slab → Review Matrix → Analyze → Review Findings`。数据集导入页完整居中；从 Field 配置开始，大型 VR 浮动面板会收进底部工作条，把中央画面留给数据。时间范围编辑时中央显示 STC，右侧显示 Prediction/Ground Truth 切片，底栏保留播放、速度、返回和确认；CUT A/CUT B 仍可直接拖动。桌面模式不允许抓取或移动面板。
 
 | 功能 | 电脑 | 平板 |
 | --- | --- | --- |

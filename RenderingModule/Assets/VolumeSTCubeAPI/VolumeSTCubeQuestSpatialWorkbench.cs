@@ -310,6 +310,7 @@ namespace UnityVolumeRendering
         private VolumeSTCubeForVrSurfacePlayer forVrSurfacePlayer;
         private int pendingDatasetDisplayTime = -1;
         private bool resumePlaybackAfterDatasetLoad;
+        private bool desktopVisualizationAligned;
         private VolumeRenderedObject groundAggregateVolume;
         private VolumeDataset groundAggregateDataset;
         private Texture2D slabTexture;
@@ -645,6 +646,74 @@ namespace UnityVolumeRendering
         public bool IsBoundaryEditing
         {
             get { return boundaryEditActive; }
+        }
+
+        public bool DesktopTaskPanelIsCentral
+        {
+            get { return stage == Stage.DatasetImport; }
+        }
+
+        public bool DesktopCompactBarActive
+        {
+            get { return stage == Stage.Field; }
+        }
+
+        public bool DesktopBoundaryBarActive
+        {
+            get { return boundaryEditActive; }
+        }
+
+        public string DesktopBoundaryRangeLabel
+        {
+            get { return TimeRangeSummary().ToUpperInvariant(); }
+        }
+
+        public string DesktopPlaybackLabel
+        {
+            get
+            {
+                return forVrSurfacePlayer != null
+                    ? forVrSurfacePlayer.PlaybackButtonLabel : "PLAY";
+            }
+        }
+
+        public string DesktopPlaybackSpeedLabel
+        {
+            get
+            {
+                return forVrSurfacePlayer != null
+                    ? forVrSurfacePlayer.PlaybackSpeedLabel : "SPEED 1x";
+            }
+        }
+
+        public void DesktopOpenFieldSetup()
+        {
+            if (authorBoundaryConfirmed)
+                EnterMainWorkspace();
+            else
+                OpenInitialAuthorBoundary();
+        }
+
+        public void DesktopTogglePlayback()
+        {
+            if (forVrSurfacePlayer != null)
+                forVrSurfacePlayer.TogglePlayback();
+        }
+
+        public void DesktopCyclePlaybackSpeed()
+        {
+            if (forVrSurfacePlayer != null)
+                forVrSurfacePlayer.CyclePlaybackSpeed();
+        }
+
+        public void DesktopCancelBoundary()
+        {
+            CancelBoundaryEdit();
+        }
+
+        public void DesktopConfirmBoundary()
+        {
+            ApplyBoundaryChange();
         }
 
         public string DesktopWorkflowTitle
@@ -6020,6 +6089,9 @@ namespace UnityVolumeRendering
                 slabPreviewObject.SetActive(false);
             if (regionRoot != null)
                 regionRoot.SetActive(false);
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                forVrSurfacePlayer != null)
+                forVrSurfacePlayer.SetSurfaceContextVisible(true);
             ExitBoundaryAuthoringView();
             ReturnToSpatialWorkflow();
             stage = cancelledInitialSetup && !authorBoundaryConfirmed
@@ -6045,6 +6117,11 @@ namespace UnityVolumeRendering
                 boundaryDimension == BoundaryDimension.Depth);
             UpdateTimeBoundaryHandles();
             UpdateDepthBoundaryPlanes();
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                BuildDesktopBoundaryBar(combinedForVrTime);
+                return;
+            }
             CreateText(boundaryContent, "TEST REGIONS", 29, FontStyle.Bold,
                 new Vector2(0, 330), new Vector2(820, 44), TextAnchor.MiddleLeft, Ink);
             SpatialAxisRigState activeBoundaryState =
@@ -6206,6 +6283,64 @@ namespace UnityVolumeRendering
             // changing this panel's or any button's authored dimensions.
             UpgradeCanvasLabelsToCrispText(boundaryContent,
                 boundaryDimension == BoundaryDimension.Time ? current : null);
+        }
+
+        private void BuildDesktopBoundaryBar(bool combinedForVrTime)
+        {
+            RectTransform rect = boundaryCanvas != null
+                ? boundaryCanvas.GetComponent<RectTransform>() : null;
+            if (rect != null)
+                rect.sizeDelta = new Vector2(1500.0f, 150.0f);
+            BoxCollider collider = boundaryCanvas != null
+                ? boundaryCanvas.GetComponent<BoxCollider>() : null;
+            if (collider != null)
+                collider.size = new Vector3(1500.0f, 150.0f, 8.0f);
+
+            Color active = boundaryDimension == BoundaryDimension.Time
+                ? TimeColor : boundaryDimension == BoundaryDimension.Depth
+                    ? DepthColor : Cyan;
+            string current = boundaryDimension == BoundaryDimension.Time
+                ? TimeRangeSummary().ToUpperInvariant()
+                : boundaryDimension == BoundaryDimension.Depth
+                    ? DepthBoundaryLabel() : BoundaryDefaultLabel();
+            boundaryCurrentRangeText = CreateText(boundaryContent, current,
+                22, FontStyle.Bold, new Vector2(-480, 0),
+                new Vector2(500, 72), TextAnchor.MiddleLeft, active);
+
+            float backX = 225.0f;
+            if (combinedForVrTime && forVrSurfacePlayer != null)
+            {
+                CreateButton(boundaryContent,
+                    forVrSurfacePlayer.PlaybackButtonLabel,
+                    new Vector2(-180, 0), new Vector2(170, 62), Cyan,
+                    () =>
+                    {
+                        forVrSurfacePlayer.TogglePlayback();
+                        BuildBoundaryPanel();
+                    });
+                CreateButton(boundaryContent,
+                    forVrSurfacePlayer.PlaybackSpeedLabel,
+                    new Vector2(15, 0), new Vector2(190, 62), Card,
+                    () =>
+                    {
+                        forVrSurfacePlayer.CyclePlaybackSpeed();
+                        BuildBoundaryPanel();
+                    });
+            }
+            else
+            {
+                backX = -15.0f;
+            }
+            CreateButton(boundaryContent,
+                initialBoundarySetupActive ? "BACK" : "CANCEL",
+                new Vector2(backX, 0), new Vector2(180, 62), Card,
+                CancelBoundaryEdit);
+            CreateButton(boundaryContent,
+                boundaryDimension == BoundaryDimension.Time
+                    ? "CONFIRM TIME RANGE" : "CONFIRM",
+                new Vector2(backX + 245.0f, 0),
+                new Vector2(280, 62), active, ApplyBoundaryChange);
+            UpgradeCanvasLabelsToCrispText(boundaryContent, current);
         }
 
         private void CreateTrailPanel()
@@ -8744,6 +8879,9 @@ namespace UnityVolumeRendering
         {
             if (panelContent == null)
                 return;
+            ConfigureDesktopConsoleShell(
+                VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Field);
             ClearChildren(panelContent);
             RefreshStepColors();
             switch (stage)
@@ -8760,6 +8898,35 @@ namespace UnityVolumeRendering
             // dynamic-font labels.
             UpgradeCanvasLabelsToCrispText(panelContent, null);
             AnimatePanelRefresh(panelCanvasGroup, ref panelRefreshAnimation);
+        }
+
+        private void ConfigureDesktopConsoleShell(bool compact)
+        {
+            if (panelCanvas == null || panelContent == null)
+                return;
+            RectTransform panelRect = panelCanvas.GetComponent<RectTransform>();
+            if (panelRect == null)
+                return;
+            panelRect.sizeDelta = compact
+                ? new Vector2(1120.0f, 150.0f)
+                : new Vector2(1120.0f, 840.0f);
+            panelContent.sizeDelta = compact
+                ? new Vector2(1070.0f, 132.0f)
+                : new Vector2(1070.0f, 595.0f);
+            panelContent.anchoredPosition = compact
+                ? Vector2.zero
+                : new Vector2(0.0f, -34.0f);
+            BoxCollider collider = panelCanvas.GetComponent<BoxCollider>();
+            if (collider != null)
+                collider.size = new Vector3(1120.0f,
+                    compact ? 150.0f : 840.0f, 8.0f);
+            for (int index = 0; index < panelRect.childCount; index++)
+            {
+                Transform child = panelRect.GetChild(index);
+                if (child == panelContent)
+                    continue;
+                child.gameObject.SetActive(!compact);
+            }
         }
 
         private void AnimatePanelRefresh(CanvasGroup group, ref Coroutine running)
@@ -9141,6 +9308,31 @@ namespace UnityVolumeRendering
         private void BuildFieldStage()
         {
             bool surfaceDataset = IsForVrSurfaceDataset;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                AlignDesktopVisualization();
+                if (variableLoadRunning || selectedDataset == null)
+                {
+                    CreateText(panelContent, "LOADING FIELD", 24,
+                        FontStyle.Bold, Vector2.zero, new Vector2(520, 60),
+                        TextAnchor.MiddleCenter, Cyan);
+                    return;
+                }
+                CreateButton(panelContent,
+                    authorBoundaryConfirmed
+                        ? "ENTER MAIN WORKSPACE"
+                        : surfaceDataset ? "SET TIME RANGE" : "SET TIME + DEPTH",
+                    Vector2.zero, new Vector2(470, 68),
+                    authorBoundaryConfirmed ? Cyan : Amber,
+                    () =>
+                    {
+                        if (authorBoundaryConfirmed)
+                            EnterMainWorkspace();
+                        else
+                            OpenInitialAuthorBoundary();
+                    });
+                return;
+            }
             CreateText(panelContent, surfaceDataset ? "SURFACE + TIME SETUP" : "FIELD SETUP", 27, FontStyle.Bold,
                 new Vector2(-105, 216), new Vector2(680, 42), TextAnchor.MiddleLeft, Ink);
             CreateButton(panelContent, "CHANGE DATASET", new Vector2(360, 216),
@@ -9197,6 +9389,19 @@ namespace UnityVolumeRendering
                 });
             UpgradeCanvasLabelsToCrispText(panelContent,
                 selectedDataset.Name.ToUpperInvariant());
+        }
+
+        private void AlignDesktopVisualization()
+        {
+            if (desktopVisualizationAligned || spatialRoot == null ||
+                xrCamera == null)
+                return;
+            // The VR comparison layout deliberately puts the animated context
+            // Field to the left of the STC. Re-centre the complete pair in the
+            // desktop viewport; once the context Field is hidden, the STC and
+            // its right-hand slice cards occupy the same central work area.
+            spatialRoot.transform.position += xrCamera.transform.right * 0.74f;
+            desktopVisualizationAligned = true;
         }
 
         private bool HasSavedAuthorBoundaries()
@@ -9287,6 +9492,8 @@ namespace UnityVolumeRendering
             SetTimeBoundaryHandleVisibility(false);
             SetDepthBoundaryVisibility(false);
             forVrSurfacePlayer.OpenCombinedXytTimeSelection();
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                forVrSurfacePlayer.SetSurfaceContextVisible(false);
             RefreshSpatialAxisControllers();
             SetStatus("Use CUT A and CUT B in the STC to define Before, During, and After. The orange panel reports the current ranges.");
         }
