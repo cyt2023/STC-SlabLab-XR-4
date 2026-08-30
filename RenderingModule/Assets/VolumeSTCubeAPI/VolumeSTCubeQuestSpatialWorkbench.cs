@@ -311,6 +311,9 @@ namespace UnityVolumeRendering
         private int pendingDatasetDisplayTime = -1;
         private bool resumePlaybackAfterDatasetLoad;
         private bool desktopVisualizationAligned;
+        private Vector3 desktopBoundaryFieldPosition;
+        private Vector3 desktopOverviewFieldPosition;
+        private Vector3 desktopFieldScale = Vector3.one;
         private VolumeRenderedObject groundAggregateVolume;
         private VolumeDataset groundAggregateDataset;
         private Texture2D slabTexture;
@@ -9393,15 +9396,35 @@ namespace UnityVolumeRendering
 
         private void AlignDesktopVisualization()
         {
-            if (desktopVisualizationAligned || spatialRoot == null ||
-                xrCamera == null)
+            if (spatialRoot == null || xrCamera == null)
                 return;
-            // The VR comparison layout deliberately puts the animated context
-            // Field to the left of the STC. Re-centre the complete pair in the
-            // desktop viewport; once the context Field is hidden, the STC and
-            // its right-hand slice cards occupy the same central work area.
-            spatialRoot.transform.position += xrCamera.transform.right * 0.74f;
-            desktopVisualizationAligned = true;
+            if (!desktopVisualizationAligned)
+            {
+                // First establish the position where the independent STC is
+                // centred by itself. The overview position then centres the
+                // midpoint between the surface Field and STC Field.
+                spatialRoot.transform.position +=
+                    xrCamera.transform.right * 0.74f;
+                desktopBoundaryFieldPosition = spatialRoot.transform.position;
+                desktopOverviewFieldPosition = desktopBoundaryFieldPosition +
+                    spatialRoot.transform.right *
+                    (VolumeSTCubeForVrFieldSwapLayout.Separation * 0.5f);
+                desktopFieldScale = spatialRoot.transform.localScale;
+                desktopVisualizationAligned = true;
+            }
+            spatialRoot.transform.position = desktopOverviewFieldPosition;
+            spatialRoot.transform.localScale = desktopFieldScale * 0.78f;
+            if (forVrSurfacePlayer != null)
+                forVrSurfacePlayer.SetSurfaceContextVisible(true);
+        }
+
+        private void FocusDesktopStcVisualization()
+        {
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ||
+                !desktopVisualizationAligned || spatialRoot == null)
+                return;
+            spatialRoot.transform.position = desktopBoundaryFieldPosition;
+            spatialRoot.transform.localScale = desktopFieldScale;
         }
 
         private bool HasSavedAuthorBoundaries()
@@ -9493,7 +9516,10 @@ namespace UnityVolumeRendering
             SetDepthBoundaryVisibility(false);
             forVrSurfacePlayer.OpenCombinedXytTimeSelection();
             if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                FocusDesktopStcVisualization();
                 forVrSurfacePlayer.SetSurfaceContextVisible(false);
+            }
             RefreshSpatialAxisControllers();
             SetStatus("Use CUT A and CUT B in the STC to define Before, During, and After. The orange panel reports the current ranges.");
         }
