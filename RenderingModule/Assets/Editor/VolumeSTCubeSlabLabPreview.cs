@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityVolumeRendering;
 
 namespace VolumeSTCubeQuest.EditorTools
 {
@@ -9,8 +10,8 @@ namespace VolumeSTCubeQuest.EditorTools
     [InitializeOnLoad]
     public static class VolumeSTCubeSlabLabPreview
     {
-        private const string PreferenceKey = "VolumeSTCube.SlabLabDesktopPreview";
-        private const string ToggleMenu = "VolumeSTCube/Slab Lab/Enable Desktop Preview";
+        private const string DesktopMenu = "VolumeSTCube/Mode/Desktop";
+        private const string VrMenu = "VolumeSTCube/Mode/VR";
 
         static VolumeSTCubeSlabLabPreview()
         {
@@ -21,50 +22,85 @@ namespace VolumeSTCubeQuest.EditorTools
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode ||
-                !EditorPrefs.GetBool(PreferenceKey, true))
+                !VolumeSTCubeMode.IsDesktop)
                 return;
             EditorApplication.delayCall += ConfigureGameViewNativeZoom;
         }
 
-        [MenuItem("VolumeSTCube/Slab Lab/Start Desktop Preview", priority = 1)]
+        [MenuItem("VolumeSTCube/Mode/Start Desktop", priority = 1)]
         private static void StartPreview()
         {
-            EditorPrefs.SetBool(PreferenceKey, true);
-            Menu.SetChecked(ToggleMenu, true);
+            SetMode(VolumeSTCubeApplicationMode.Desktop);
             ConfigureGameViewNativeZoom();
             if (!EditorApplication.isPlaying)
                 EditorApplication.isPlaying = true;
             else
-                Debug.Log("Slab Lab desktop preview will be installed the next time Play Mode starts.");
+                Debug.Log("Desktop mode will be installed the next time Play Mode starts.");
         }
 
-        [MenuItem(ToggleMenu, priority = 20)]
-        private static void TogglePreview()
+        [MenuItem("VolumeSTCube/Mode/Start VR", priority = 2)]
+        private static void StartVr()
         {
-            bool enabled = !EditorPrefs.GetBool(PreferenceKey, true);
-            EditorPrefs.SetBool(PreferenceKey, enabled);
-            Menu.SetChecked(ToggleMenu, enabled);
-            Debug.Log("Slab Lab desktop preview " + (enabled ? "enabled." : "disabled."));
+            SetMode(VolumeSTCubeApplicationMode.VirtualReality);
+            if (!EditorApplication.isPlaying)
+                EditorApplication.isPlaying = true;
+            else
+                Debug.Log("VR mode will be installed the next time Play Mode starts.");
         }
 
-        [MenuItem(ToggleMenu, true)]
-        private static bool ValidateTogglePreview()
+        [MenuItem(DesktopMenu, priority = 20)]
+        private static void SelectDesktop()
         {
-            Menu.SetChecked(ToggleMenu, EditorPrefs.GetBool(PreferenceKey, true));
+            SetMode(VolumeSTCubeApplicationMode.Desktop);
+        }
+
+        [MenuItem(DesktopMenu, true)]
+        private static bool ValidateDesktop()
+        {
+            RefreshModeChecks();
             return !EditorApplication.isPlayingOrWillChangePlaymode;
         }
 
-        [MenuItem("VolumeSTCube/Slab Lab/Stop Desktop Preview", priority = 2)]
+        [MenuItem(VrMenu, priority = 21)]
+        private static void SelectVr()
+        {
+            SetMode(VolumeSTCubeApplicationMode.VirtualReality);
+        }
+
+        [MenuItem(VrMenu, true)]
+        private static bool ValidateVr()
+        {
+            RefreshModeChecks();
+            return !EditorApplication.isPlayingOrWillChangePlaymode;
+        }
+
+        [MenuItem("VolumeSTCube/Mode/Stop", priority = 3)]
         private static void StopPreview()
         {
             if (EditorApplication.isPlaying)
                 EditorApplication.isPlaying = false;
         }
 
-        [MenuItem("VolumeSTCube/Slab Lab/Stop Desktop Preview", true)]
+        [MenuItem("VolumeSTCube/Mode/Stop", true)]
         private static bool ValidateStopPreview()
         {
             return EditorApplication.isPlaying;
+        }
+
+        private static void SetMode(VolumeSTCubeApplicationMode mode)
+        {
+            EditorPrefs.SetString(VolumeSTCubeMode.EditorPreferenceKey,
+                mode.ToString());
+            EditorPrefs.SetBool(VolumeSTCubeMode.LegacyDesktopPreferenceKey,
+                mode == VolumeSTCubeApplicationMode.Desktop);
+            RefreshModeChecks();
+            Debug.Log("SlabLab application mode: " + mode + ".");
+        }
+
+        private static void RefreshModeChecks()
+        {
+            Menu.SetChecked(DesktopMenu, VolumeSTCubeMode.IsDesktop);
+            Menu.SetChecked(VrMenu, VolumeSTCubeMode.IsVirtualReality);
         }
 
         private static void ConfigureGameViewNativeZoom()

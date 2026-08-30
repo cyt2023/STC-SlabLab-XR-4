@@ -1,10 +1,10 @@
-# STC SlabLab Flat（电脑 / 平板版）
+# STC SlabLab（桌面 / 平板 + VR 双模式）
 
 [English](README.md) | 中文
 
 本项目在原始 [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube) Unity 体渲染项目上增加了低耦合的 API 集成层，同时保留原有 STC 导入器、渲染器、Shader、材质和交互控制。
 
-当前仓库已加入无需头显的平面交互层，支持 Windows、macOS、Android 平板和 iPad。鼠标、键盘、单指/双指手势、响应式安全区域 HUD 与一键构建方式见 [平面版使用说明](docs/FLAT_SCREEN.zh-CN.md)。Quest/OpenXR 构建入口仍保留。
+当前仓库包含两个独立前端模式：Desktop 支持 Windows、macOS、Android 平板和 iPad；VR 支持 Quest/OpenXR。两种模式共用数据、渲染和分析核心，分别使用鼠标/触控与头显/Touch 控制器。模式切换、操作和一键构建方式见 [桌面 / VR 双模式说明](docs/FLAT_SCREEN.zh-CN.md)。
 
 当前版本统一支持两类时空数据：
 

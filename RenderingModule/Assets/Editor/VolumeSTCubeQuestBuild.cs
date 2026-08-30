@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.XR.Management;
 using UnityEngine.XR.OpenXR.Features;
+using UnityVolumeRendering.EditorTools;
 
 namespace VolumeSTCubeQuest.EditorTools
 {
@@ -84,6 +85,11 @@ namespace VolumeSTCubeQuest.EditorTools
             // The volume shader has many keyword combinations. Mesh-channel stripping
             // forces Unity to compile every combination during each Android build.
             PlayerSettings.stripUnusedMeshComponents = false;
+
+            // A tablet build may have configured Android immediately before
+            // this. Always remove desktop symbols before enabling OpenXR.
+            VolumeSTCubeBuildModeDefines.Configure(
+                BuildTargetGroup.Android, false);
 
             XRGeneralSettingsPerBuildTarget perTarget = GetOrCreateXRSettings();
             if (!perTarget.HasManagerSettingsForBuildTarget(BuildTargetGroup.Android))

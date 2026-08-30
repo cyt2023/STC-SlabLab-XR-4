@@ -529,21 +529,11 @@ namespace UnityVolumeRendering
 
     public static class VolumeSTCubeQuestBootstrap
     {
-        private const string DesktopPreviewEditorPref = "VolumeSTCube.SlabLabDesktopPreview";
-
         public static bool IsFlatScreenEnabled
         {
             get
             {
-#if SLABLAB_FLAT
-                return true;
-#elif UNITY_EDITOR
-                return UnityEditor.EditorPrefs.GetBool(DesktopPreviewEditorPref, true);
-#elif UNITY_STANDALONE || UNITY_IOS
-                return true;
-#else
-                return false;
-#endif
+                return VolumeSTCubeMode.IsDesktop;
             }
         }
 
@@ -562,7 +552,7 @@ namespace UnityVolumeRendering
 #if UNITY_ANDROID && !UNITY_EDITOR
                 return true;
 #elif UNITY_EDITOR
-                return IsDesktopPreviewEnabled;
+                return true;
 #elif UNITY_STANDALONE || UNITY_IOS
                 return true;
 #else

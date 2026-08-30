@@ -1,6 +1,11 @@
-# STC SlabLab 平面版
+# STC SlabLab 桌面 / VR 双模式
 
-平面版复用 XR 版本的数据、体渲染、香港底图、时间轴和 S4D/MatPlot 分析工作流，输入层改为电脑与平板可直接使用的方式。无需头显或手柄。
+项目保留两个独立前端模式，共用 Dataset、体渲染、香港底图、时间轴和 S4D/MatPlot 分析核心：
+
+- `Desktop`：电脑和平板使用鼠标、键盘或触控，无需头显。
+- `VR`：Quest 使用 OpenXR、头显跟踪和 Touch 控制器。
+
+模式在应用启动前确定，不在运行过程中热切换，因为切换 XR Loader 需要重新启动 Player。
 
 ## 支持平台
 
@@ -10,6 +15,17 @@
 - Unity Editor Play Mode
 
 Unity 版本为 `2022.3.62f3`，使用 Unity Hub 打开 `RenderingModule/`，主场景是 `Assets/Scenes/mainScene.unity`。
+
+## 在 Editor 中切换模式
+
+在进入 Play Mode 前选择：
+
+```text
+VolumeSTCube > Mode > Desktop
+VolumeSTCube > Mode > VR
+```
+
+也可以用 `Start Desktop` 或 `Start VR` 选择模式并直接进入 Play Mode。模式切换后需要重新开始 Play，已经运行的场景不会在中途更换输入系统。
 
 ## 操作
 
@@ -31,14 +47,14 @@ Unity 版本为 `2022.3.62f3`，使用 Unity Hub 打开 `RenderingModule/`，主
 在 Unity 菜单中选择：
 
 ```text
-VolumeSTCube > Flat Screen > Configure Current Platform
-VolumeSTCube > Flat Screen > Build macOS
-VolumeSTCube > Flat Screen > Build Windows 64-bit
-VolumeSTCube > Flat Screen > Build Android Tablet APK
-VolumeSTCube > Flat Screen > Export iPad Xcode Project
+VolumeSTCube > Desktop > Configure Current Platform
+VolumeSTCube > Desktop > Build macOS
+VolumeSTCube > Desktop > Build Windows 64-bit
+VolumeSTCube > Desktop > Build Android Tablet APK
+VolumeSTCube > Desktop > Export iPad Xcode Project
 ```
 
-构建结果写入 `RenderingModule/Builds/`（已被 Git 忽略）。构建脚本会添加 `SLABLAB_FLAT` 编译标记、关闭该平台的 XR 自动启动、设置横屏和平面版应用信息。
+构建结果写入 `RenderingModule/Builds/`（已被 Git 忽略）。桌面构建脚本会启用 `SLABLAB_DESKTOP`（并暂时保留兼容标记 `SLABLAB_FLAT`）、移除 `SLABLAB_VR`，同时关闭该平台的 XR 自动启动。
 
 ## 后端
 
@@ -55,4 +71,11 @@ Windows 使用根目录的 `Start-Backend.cmd`；macOS/Linux 使用：
 
 ## 与 Quest 版本并存
 
-Quest 构建入口仍然保留。平面版通过 `SLABLAB_FLAT` 选择鼠标/触控输入；Quest 构建脚本会继续使用 OpenXR 和 Touch 控制器。切换目标平台后，应先执行对应的 Configure 菜单项再构建。
+Quest 使用以下入口：
+
+```text
+VolumeSTCube > Quest > Configure Project
+VolumeSTCube > Quest > Build APK
+```
+
+Quest 构建脚本会移除所有桌面标记、启用 `SLABLAB_VR`，并配置 OpenXR 和 Touch 控制器。两个构建脚本会主动清除对方的标记，因此可以在同一个 Unity 工程中安全切换桌面、Android 平板和 Quest 构建。

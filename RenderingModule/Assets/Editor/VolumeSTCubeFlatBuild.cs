@@ -12,9 +12,7 @@ namespace UnityVolumeRendering.EditorTools
     public static class VolumeSTCubeFlatBuild
     {
         private const string ScenePath = "Assets/Scenes/mainScene.unity";
-        private const string FlatDefine = "SLABLAB_FLAT";
-
-        [MenuItem("VolumeSTCube/Flat Screen/Configure Current Platform")]
+        [MenuItem("VolumeSTCube/Desktop/Configure Current Platform")]
         public static void ConfigureCurrentPlatform()
         {
             BuildTarget target = EditorUserBuildSettings.activeBuildTarget;
@@ -22,28 +20,28 @@ namespace UnityVolumeRendering.EditorTools
             Debug.Log("SlabLab flat-screen configuration complete for " + target + ".");
         }
 
-        [MenuItem("VolumeSTCube/Flat Screen/Build macOS")]
+        [MenuItem("VolumeSTCube/Desktop/Build macOS")]
         public static void BuildMacOS()
         {
             Build(BuildTarget.StandaloneOSX, BuildTargetGroup.Standalone,
                 "SlabLab-Flat.app");
         }
 
-        [MenuItem("VolumeSTCube/Flat Screen/Build Windows 64-bit")]
+        [MenuItem("VolumeSTCube/Desktop/Build Windows 64-bit")]
         public static void BuildWindows()
         {
             Build(BuildTarget.StandaloneWindows64, BuildTargetGroup.Standalone,
                 "SlabLab-Flat.exe");
         }
 
-        [MenuItem("VolumeSTCube/Flat Screen/Build Android Tablet APK")]
+        [MenuItem("VolumeSTCube/Desktop/Build Android Tablet APK")]
         public static void BuildAndroidTablet()
         {
             Build(BuildTarget.Android, BuildTargetGroup.Android,
                 "SlabLab-Flat-Tablet.apk");
         }
 
-        [MenuItem("VolumeSTCube/Flat Screen/Export iPad Xcode Project")]
+        [MenuItem("VolumeSTCube/Desktop/Export iPad Xcode Project")]
         public static void BuildIPad()
         {
             Build(BuildTarget.iOS, BuildTargetGroup.iOS, "SlabLab-Flat-iPad");
@@ -88,17 +86,7 @@ namespace UnityVolumeRendering.EditorTools
             PlayerSettings.SetApiCompatibilityLevel(group,
                 ApiCompatibilityLevel.NET_Standard_2_0);
 
-            string defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(group);
-            string[] parts = defines.Split(new[] { ';' },
-                StringSplitOptions.RemoveEmptyEntries);
-            bool found = Array.Exists(parts, item => item == FlatDefine);
-            if (!found)
-            {
-                defines = string.IsNullOrEmpty(defines)
-                    ? FlatDefine
-                    : defines + ";" + FlatDefine;
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(group, defines);
-            }
+            VolumeSTCubeBuildModeDefines.Configure(group, true);
 
             DisableXRStartup(group);
 

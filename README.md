@@ -1,8 +1,8 @@
-# STC SlabLab Flat (Desktop / Tablet)
+# STC SlabLab (Desktop / Tablet + VR)
 
 English | [中文](README.zh-CN.md)
 
-STC SlabLab Flat is the monitor and tablet edition of the interactive Unity workbench for exploring continuous `XYZ + time` scientific fields, grounding an XY depth slab, and sending selected data to MatPlotAgent for natural-language 2D analysis. It supports Windows, macOS, Android tablets, and iPad with mouse, keyboard, and touch gestures; see the [flat-screen guide](docs/FLAT_SCREEN.zh-CN.md). The Quest/OpenXR build path remains available.
+STC SlabLab now has two independent front-end modes backed by the same dataset, rendering, and analysis core. Desktop mode supports Windows, macOS, Android tablets, and iPad with mouse, keyboard, and touch gestures; VR mode supports Quest/OpenXR and Touch controllers. See the [Desktop / VR mode guide](docs/FLAT_SCREEN.zh-CN.md) for switching, controls, and builds.
 
 It builds on the original [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube) Unity project while preserving its importer, volume renderer, shaders, materials, and controls.
 
