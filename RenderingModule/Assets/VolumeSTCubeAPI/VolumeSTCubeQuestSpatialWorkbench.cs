@@ -9405,8 +9405,11 @@ namespace UnityVolumeRendering
                 // midpoint between the surface Field and STC Field.
                 spatialRoot.transform.position +=
                     xrCamera.transform.right * 0.74f;
-                desktopBoundaryFieldPosition = spatialRoot.transform.position;
-                desktopOverviewFieldPosition = desktopBoundaryFieldPosition +
+                // This anchored position centres the midpoint of the compact
+                // desktop pair. Boundary editing then moves the pair left by
+                // half its separation so the remaining STC is centred alone.
+                desktopOverviewFieldPosition = spatialRoot.transform.position;
+                desktopBoundaryFieldPosition = desktopOverviewFieldPosition -
                     spatialRoot.transform.right *
                     (VolumeSTCubeForVrFieldSwapLayout.ActiveSeparation * 0.5f);
                 desktopFieldScale = spatialRoot.transform.localScale;
