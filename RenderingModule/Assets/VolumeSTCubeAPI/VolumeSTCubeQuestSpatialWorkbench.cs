@@ -9408,6 +9408,11 @@ namespace UnityVolumeRendering
                 // itself and left the companion clipped by the right edge.
                 spatialRoot.transform.position +=
                     xrCamera.transform.right * 0.12f;
+                // Reserve a dedicated row below the surface Field for its
+                // timeline.  Without this lift, the desktop bottom action bar
+                // occludes the lower half of the playback controls.
+                spatialRoot.transform.position +=
+                    xrCamera.transform.up * 0.22f;
                 // This anchored position centres the midpoint of the compact
                 // desktop pair. Boundary editing then moves the pair left by
                 // half its separation so the remaining STC is centred alone.
