@@ -1769,10 +1769,20 @@ namespace UnityVolumeRendering
                 // after the headset-anchored workspace has been rotated.
                 if (state.hasCustomDock && !IsForVrSurfaceDataset)
                     desiredPositionInFieldSpace = state.customDockFieldPosition;
-                Vector3 dockedWorldPosition = spatialRoot.transform.TransformPoint(
-                    desiredPositionInFieldSpace);
+                bool independentDesktopAxis =
+                    VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                    spatialAxisComposerRoot.transform.parent !=
+                        spatialRoot.transform;
+                // On desktop the axis composer is a self-contained right-hand
+                // work area. Its body must be local to that area; calculating
+                // the dock through a moving Field left the controls offset far
+                // outside the visible viewport.
+                Vector3 dockedWorldPosition = independentDesktopAxis
+                    ? spatialAxisComposerRoot.transform.position
+                    : spatialRoot.transform.TransformPoint(
+                        desiredPositionInFieldSpace);
                 bool animateDock = state.pendingDockAnimation;
-                rig.transform.position = animateDock
+                rig.transform.position = animateDock && !independentDesktopAxis
                     ? spatialRoot.transform.TransformPoint(
                         desiredPositionInFieldSpace +
                         new Vector3(0.18f, 0.0f, 0.0f))
@@ -1780,7 +1790,10 @@ namespace UnityVolumeRendering
                 // Look exactly along the horizontal X/Y angle bisector. A pure
                 // +45 degree yaw keeps every vertical cube edge upright, sends
                 // X and Y to opposite sides on screen, and leaves Z downward.
-                rig.transform.rotation = state.hasCustomDock &&
+                rig.transform.rotation = independentDesktopAxis
+                    ? spatialAxisComposerRoot.transform.rotation *
+                        pairedFieldRotation * Quaternion.Euler(0.0f, 45.0f, 0.0f)
+                    : state.hasCustomDock &&
                     !IsForVrSurfaceDataset
                     ? spatialRoot.transform.rotation * state.customDockFieldRotation
                     : spatialRoot.transform.rotation * pairedFieldRotation *
@@ -9494,7 +9507,10 @@ namespace UnityVolumeRendering
 
             EnsureDesktopFocusTargets(companion);
             bool timeSelection = stage == Stage.Field && boundaryEditActive;
-            bool slabLayout = stage == Stage.Slab && mainWorkspaceEntered;
+            // Step 3 owns this presentation regardless of which confirmation
+            // path entered it. Tying it to mainWorkspaceEntered left the axis
+            // area empty after some valid time-range transitions.
+            bool slabLayout = stage == Stage.Slab;
             if (timeSelection)
             {
                 if (desktopFocusView != DesktopFocusView.TimeSurface &&
@@ -9654,13 +9670,13 @@ namespace UnityVolumeRendering
             if (!slab)
             {
                 surfacePosition = DesktopViewportPosition(
-                    timeSurface ? 0.56f : 0.18f, 0.51f);
+                    timeSurface ? 0.59f : 0.19f, 0.51f);
                 surfaceScale = desktopFieldScale *
-                    (timeSurface ? 0.67f : 0.31f);
+                    (timeSurface ? 0.95f : 0.46f);
                 stcPosition = DesktopViewportPosition(
-                    timeSurface ? 0.18f : 0.58f, 0.51f);
+                    timeSurface ? 0.19f : 0.61f, 0.51f);
                 stcScale = desktopFieldScale *
-                    (timeSurface ? 0.31f : 0.67f);
+                    (timeSurface ? 0.46f : 0.95f);
                 axisPosition = DesktopViewportPosition(0.84f, 0.50f);
                 axisScale = desktopAxisBaseScale * 0.42f;
                 return;
@@ -9668,12 +9684,12 @@ namespace UnityVolumeRendering
 
             if (!slabSurface && !slabStc)
             {
-                surfacePosition = DesktopViewportPosition(0.16f, 0.66f);
-                stcPosition = DesktopViewportPosition(0.16f, 0.30f);
-                surfaceScale = desktopFieldScale * 0.25f;
-                stcScale = desktopFieldScale * 0.25f;
-                axisPosition = DesktopViewportPosition(0.66f, 0.50f);
-                axisScale = desktopAxisBaseScale * 0.92f;
+                surfacePosition = DesktopViewportPosition(0.19f, 0.67f);
+                stcPosition = DesktopViewportPosition(0.19f, 0.29f);
+                surfaceScale = desktopFieldScale * 0.40f;
+                stcScale = desktopFieldScale * 0.40f;
+                axisPosition = DesktopViewportPosition(0.68f, 0.50f);
+                axisScale = desktopAxisBaseScale * 1.12f;
                 return;
             }
 
@@ -9682,14 +9698,14 @@ namespace UnityVolumeRendering
                 surfacePrimary ? 0.47f : 0.14f,
                 surfacePrimary ? 0.50f : 0.68f);
             surfaceScale = desktopFieldScale *
-                (surfacePrimary ? 0.64f : 0.24f);
+                (surfacePrimary ? 0.86f : 0.34f);
             stcPosition = DesktopViewportPosition(
                 surfacePrimary ? 0.14f : 0.47f,
                 surfacePrimary ? 0.28f : 0.50f);
             stcScale = desktopFieldScale *
-                (surfacePrimary ? 0.24f : 0.64f);
+                (surfacePrimary ? 0.34f : 0.86f);
             axisPosition = DesktopViewportPosition(0.84f, 0.50f);
-            axisScale = desktopAxisBaseScale * 0.43f;
+            axisScale = desktopAxisBaseScale * 0.58f;
         }
 
         private void ApplyDesktopFocusPose(
@@ -15003,7 +15019,8 @@ namespace UnityVolumeRendering
 
             // A combined-STC selection is the For_VR Set Time Range step.
             // Return to the normal workspace at its next stage.
-            if (!mainWorkspaceEntered)
+            bool enteringMainWorkspace = !mainWorkspaceEntered;
+            if (enteringMainWorkspace)
             {
                 preconfigurationActive = false;
                 mainWorkspaceEntered = true;
@@ -15018,6 +15035,18 @@ namespace UnityVolumeRendering
                 RefreshSpatialAxisControllers();
                 UpdateVariablePaletteFollow(true);
             }
+            stage = enteringMainWorkspace ? Stage.Slab : boundaryReturnStage;
+            boundaryEditActive = false;
+            initialBoundarySetupActive = false;
+            boundaryVariableQueue.Clear();
+            boundaryVariableQueueIndex = 0;
+            if (boundaryCanvas != null)
+                boundaryCanvas.gameObject.SetActive(false);
+            SetTimeBoundaryHandleVisibility(false);
+            SetDepthBoundaryVisibility(false);
+            ExitBoundaryAuthoringView();
+            if (forVrSurfacePlayer != null)
+                forVrSurfacePlayer.SetSurfaceContextVisible(true);
 
             if (AreSpatialAxisBindingsComplete(out string missing))
             {
