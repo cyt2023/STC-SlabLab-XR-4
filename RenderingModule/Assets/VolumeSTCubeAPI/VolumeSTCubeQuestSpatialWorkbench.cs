@@ -673,12 +673,32 @@ namespace UnityVolumeRendering
 
         public bool DesktopCompactBarActive
         {
-            get { return stage == Stage.Field; }
+            get { return stage == Stage.Field || stage == Stage.Slab; }
         }
 
         public bool DesktopBoundaryBarActive
         {
             get { return boundaryEditActive; }
+        }
+
+        public bool DesktopAxisBarActive
+        {
+            get { return stage == Stage.Slab; }
+        }
+
+        public bool DesktopAxisBindingsComplete
+        {
+            get { return AreSpatialAxisBindingsComplete(out _); }
+        }
+
+        public string DesktopAxisBindingLabel
+        {
+            get
+            {
+                if (AreSpatialAxisBindingsComplete(out string missing))
+                    return "VARIABLE  ·  TIME  ·  DEPTH READY";
+                return ("DRAG TO AXES: " + missing).ToUpperInvariant();
+            }
         }
 
         public string DesktopBoundaryRangeLabel
@@ -732,6 +752,11 @@ namespace UnityVolumeRendering
         public void DesktopConfirmBoundary()
         {
             ApplyBoundaryChange();
+        }
+
+        public void DesktopContinueFromAxis()
+        {
+            ToolbarGenerateSlab();
         }
 
         public string DesktopWorkflowTitle
@@ -9538,9 +9563,23 @@ namespace UnityVolumeRendering
         private void EnsureDesktopFocusTargets(
             VolumeSTCubeForVrXytCompanion companion)
         {
-            if (desktopFocusTargetsReady)
-                return;
-            desktopFocusTargetsReady = true;
+            if (!desktopFocusTargetsReady)
+            {
+                desktopFocusTargetsReady = true;
+                if (spatialAxisComposerRoot != null)
+                {
+                    desktopAxisParent = spatialAxisComposerRoot.transform.parent;
+                    desktopAxisOriginalLocalPosition =
+                        spatialAxisComposerRoot.transform.localPosition;
+                    desktopAxisOriginalLocalRotation =
+                        spatialAxisComposerRoot.transform.localRotation;
+                    desktopAxisOriginalLocalScale =
+                        spatialAxisComposerRoot.transform.localScale;
+                    spatialAxisComposerRoot.transform.SetParent(transform, true);
+                    desktopAxisBaseScale =
+                        spatialAxisComposerRoot.transform.localScale;
+                }
+            }
 
             AddDesktopFocusTarget(spatialRoot.transform,
                 "Desktop Surface Field Focus", FocusDesktopSurfaceField,
@@ -9551,15 +9590,9 @@ namespace UnityVolumeRendering
 
             if (spatialAxisComposerRoot != null)
             {
-                desktopAxisParent = spatialAxisComposerRoot.transform.parent;
-                desktopAxisOriginalLocalPosition =
-                    spatialAxisComposerRoot.transform.localPosition;
-                desktopAxisOriginalLocalRotation =
-                    spatialAxisComposerRoot.transform.localRotation;
-                desktopAxisOriginalLocalScale =
-                    spatialAxisComposerRoot.transform.localScale;
-                spatialAxisComposerRoot.transform.SetParent(transform, true);
-                desktopAxisBaseScale = spatialAxisComposerRoot.transform.localScale;
+                // RefreshSpatialAxisControllers rebuilds all children. Re-add
+                // this rear catch surface whenever that happens so clicking
+                // the axis body always restores it to the primary position.
                 AddDesktopFocusTarget(spatialAxisComposerRoot.transform,
                     "Desktop Axis Focus", FocusDesktopAxis,
                     new Vector3(2.15f, 1.65f, 0.035f));
@@ -9689,7 +9722,7 @@ namespace UnityVolumeRendering
                 surfaceScale = desktopFieldScale * 0.40f;
                 stcScale = desktopFieldScale * 0.40f;
                 axisPosition = DesktopViewportPosition(0.68f, 0.50f);
-                axisScale = desktopAxisBaseScale * 1.12f;
+                axisScale = desktopAxisBaseScale * 1.48f;
                 return;
             }
 
@@ -9705,7 +9738,7 @@ namespace UnityVolumeRendering
             stcScale = desktopFieldScale *
                 (surfacePrimary ? 0.34f : 0.86f);
             axisPosition = DesktopViewportPosition(0.84f, 0.50f);
-            axisScale = desktopAxisBaseScale * 0.58f;
+            axisScale = desktopAxisBaseScale * 0.72f;
         }
 
         private void ApplyDesktopFocusPose(
@@ -9749,8 +9782,11 @@ namespace UnityVolumeRendering
                 out Vector3 surfaceTarget, out Vector3 surfaceScaleTarget,
                 out Vector3 stcTarget, out Vector3 stcScaleTarget,
                 out Vector3 axisTarget, out Vector3 axisScaleTarget);
+            bool slabFocus = focus == DesktopFocusView.SlabAxis ||
+                focus == DesktopFocusView.SlabSurface ||
+                focus == DesktopFocusView.SlabStc;
             if (spatialAxisComposerRoot != null)
-                spatialAxisComposerRoot.SetActive(true);
+                spatialAxisComposerRoot.SetActive(slabFocus);
 
             float elapsed = 0.0f;
             const float duration = 0.58f;
@@ -9768,7 +9804,7 @@ namespace UnityVolumeRendering
                     Vector3.Lerp(stcStart, stcTarget, t) -
                         xrCamera.transform.up * arc,
                     Vector3.Lerp(stcScaleStart, stcScaleTarget, t));
-                if (spatialAxisComposerRoot != null)
+                if (spatialAxisComposerRoot != null && slabFocus)
                 {
                     spatialAxisComposerRoot.transform.position = Vector3.Lerp(
                         axisStart, axisTarget, t) + xrCamera.transform.up *

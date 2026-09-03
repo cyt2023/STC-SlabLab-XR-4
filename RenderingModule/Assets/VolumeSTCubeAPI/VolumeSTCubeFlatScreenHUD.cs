@@ -36,6 +36,7 @@ namespace UnityVolumeRendering
         private Button speedButton;
         private Button backButton;
         private Button confirmButton;
+        private Button axisNextButton;
         private GraphicRaycaster hudRaycaster;
         private readonly List<Canvas> workflowPanels = new List<Canvas>();
         private Rect lastSafeArea;
@@ -146,6 +147,8 @@ namespace UnityVolumeRendering
                 workbench.DesktopCancelBoundary, 150.0f, BackAction);
             confirmButton = CreateButton("CONFIRM TIME RANGE", bottomRect,
                 workbench.DesktopConfirmBoundary, 300.0f, ConfirmAction);
+            axisNextButton = CreateButton("GENERATE SLAB", bottomRect,
+                workbench.DesktopContinueFromAxis, 260.0f, ConfirmAction);
             bottomBar.SetActive(false);
 
             helpPanel = CreatePanel("Help", safeAreaRoot,
@@ -192,15 +195,29 @@ namespace UnityVolumeRendering
             bottomBar.SetActive(visible);
             if (!visible)
                 return;
-            bool boundary = workbench.DesktopBoundaryBarActive;
-            bottomStatusText.gameObject.SetActive(boundary);
-            bottomStatusText.text = boundary
-                ? workbench.DesktopBoundaryRangeLabel : string.Empty;
-            primaryButton.gameObject.SetActive(!boundary);
+            // Step 3 has its own axis-binding workflow. It takes precedence
+            // over any stale boundary flag so time controls can never leak
+            // into the next step.
+            bool axis = workbench.DesktopAxisBarActive;
+            bool boundary = !axis && workbench.DesktopBoundaryBarActive;
+            bottomStatusText.gameObject.SetActive(boundary || axis);
+            bottomStatusText.text = axis
+                ? workbench.DesktopAxisBindingLabel
+                : boundary ? workbench.DesktopBoundaryRangeLabel : string.Empty;
+            primaryButton.gameObject.SetActive(!boundary && !axis);
             playbackButton.gameObject.SetActive(boundary);
             speedButton.gameObject.SetActive(boundary);
             backButton.gameObject.SetActive(boundary);
             confirmButton.gameObject.SetActive(boundary);
+            axisNextButton.gameObject.SetActive(axis);
+            if (axis)
+            {
+                bool ready = workbench.DesktopAxisBindingsComplete;
+                axisNextButton.interactable = ready;
+                Image image = axisNextButton.GetComponent<Image>();
+                if (image != null)
+                    image.color = ready ? ConfirmAction : UtilityAction;
+            }
             SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
             SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
         }
