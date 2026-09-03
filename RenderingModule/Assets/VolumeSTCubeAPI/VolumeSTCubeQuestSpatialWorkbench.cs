@@ -701,10 +701,29 @@ namespace UnityVolumeRendering
             }
         }
 
+        public bool DesktopComposerPanelActive
+        {
+            get
+            {
+                return stage == Stage.Slab &&
+                    ((slabPreviewCanvas != null &&
+                      slabPreviewCanvas.gameObject.activeSelf) ||
+                     (intentCanvas != null &&
+                      intentCanvas.gameObject.activeSelf));
+            }
+        }
+
+        public string DesktopSlabActionLabel
+        {
+            get { return slabPreviewBuilt ? "MATPLOT INTENT" : "GENERATE SLAB"; }
+        }
+
         public string DesktopAxisBindingLabel
         {
             get
             {
+                if (slabPreviewBuilt)
+                    return "SLAB READY  ·  CHOOSE THE ANALYSIS TASK";
                 if (AreSpatialAxisBindingsComplete(out string missing))
                     return "VARIABLE  ·  TIME  ·  DEPTH READY";
                 return ("DRAG TO AXES: " + missing).ToUpperInvariant();
@@ -766,7 +785,10 @@ namespace UnityVolumeRendering
 
         public void DesktopContinueFromAxis()
         {
-            ToolbarGenerateSlab();
+            if (slabPreviewBuilt)
+                OpenIntentEditor();
+            else
+                ToolbarGenerateSlab();
         }
 
         public string DesktopWorkflowTitle
@@ -7261,11 +7283,20 @@ namespace UnityVolumeRendering
                 return;
             ClearChildren(slabPreviewContent);
 
-            CreateText(slabPreviewContent, "SOURCE PREVIEW",
+            bool waitingForIntent =
+                spatialWorkflowStep < SpatialWorkflowStep.SourcePreviewReady;
+            CreateText(slabPreviewContent,
+                waitingForIntent ? "SLAB FRAME READY" : "SOURCE PREVIEW",
                 14, FontStyle.Bold, new Vector2(0, 266), new Vector2(820, 24),
                 TextAnchor.MiddleLeft, Muted);
             CreateText(slabPreviewContent,
-                activeGridColumns + " × " + activeGridRows + " INTERVAL-MEAN GRID",
+                waitingForIntent
+                    ? activeGridColumns + " TIME RANGE" +
+                        (activeGridColumns == 1 ? string.Empty : "S") +
+                        "  ×  " + activeGridRows + " DEPTH RANGE" +
+                        (activeGridRows == 1 ? string.Empty : "S")
+                    : activeGridColumns + " × " + activeGridRows +
+                        " INTERVAL-MEAN GRID",
                 27, FontStyle.Bold, new Vector2(0, 232), new Vector2(820, 38),
                 TextAnchor.MiddleLeft, Ink);
             if (sourcePreviewRenderVariableIndex >= 0 &&
@@ -7375,7 +7406,8 @@ namespace UnityVolumeRendering
                         {
                             CreateText(cell, sourcePreviewRunning
                                     ? "COMPUTING\nLOCAL PREVIEW"
-                                    : "PREVIEW\nUNAVAILABLE",
+                                    : timeLabels[timeIndex].ToUpperInvariant() +
+                                        "\nWAITING FOR INTENT",
                                 10, FontStyle.Bold, new Vector2(0, -5),
                                 new Vector2(cellWidth - 22, cellHeight - 28),
                                 TextAnchor.MiddleCenter, Muted);
@@ -7385,7 +7417,8 @@ namespace UnityVolumeRendering
                     {
                         CreateText(cell, sourcePreviewRunning
                                 ? "COMPUTING\nINTERVAL MEAN"
-                                : "AGGREGATE PREVIEW\nUNAVAILABLE",
+                                : timeLabels[timeIndex].ToUpperInvariant() +
+                                    "\nWAITING FOR MATPLOT INTENT",
                             10, FontStyle.Bold, new Vector2(0, -5),
                             new Vector2(cellWidth - 22, cellHeight - 28),
                             TextAnchor.MiddleCenter, Muted);
@@ -9550,8 +9583,8 @@ namespace UnityVolumeRendering
             // one readable task panel. Keeping both layers visible would put
             // world content behind the panel and violate the desktop layout's
             // non-overlap rule.
-            bool slabPreview = DesktopSlabPreviewActive;
-            if (slabPreview)
+            bool composerPanel = DesktopComposerPanelActive;
+            if (composerPanel)
             {
                 if (desktopFocusAnimation != null)
                     StopCoroutine(desktopFocusAnimation);

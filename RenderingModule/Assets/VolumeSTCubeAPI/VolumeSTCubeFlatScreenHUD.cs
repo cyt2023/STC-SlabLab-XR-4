@@ -214,6 +214,8 @@ namespace UnityVolumeRendering
             {
                 bool ready = workbench.DesktopAxisBindingsComplete;
                 axisNextButton.interactable = ready;
+                SetButtonText(axisNextButton,
+                    workbench.DesktopSlabActionLabel);
                 Image image = axisNextButton.GetComponent<Image>();
                 if (image != null)
                     image.color = ready ? ConfirmAction : UtilityAction;
@@ -279,11 +281,12 @@ namespace UnityVolumeRendering
                 Canvas panel = workflowPanels[index];
                 if (panel == null || !panel.gameObject.activeInHierarchy)
                     continue;
-                bool slabPreview = workbench != null &&
-                    workbench.DesktopSlabPreviewActive &&
-                    panel.name == "FacetSlab Configuration Preview";
+                bool desktopComposer = workbench != null &&
+                    workbench.DesktopComposerPanelActive &&
+                    (panel.name == "FacetSlab Configuration Preview" ||
+                     panel.name == "MatPlotAgent Intent Composer");
                 if (workbench != null && workbench.DesktopCompactBarActive &&
-                    !slabPreview)
+                    !desktopComposer)
                 {
                     panel.enabled = false;
                     continue;
@@ -292,10 +295,10 @@ namespace UnityVolumeRendering
                 RectTransform rect = panel.GetComponent<RectTransform>();
                 if (rect == null)
                     continue;
-                float panelHorizontalWorld = slabPreview
+                float panelHorizontalWorld = desktopComposer
                     ? viewHeight * camera.aspect * 0.72f
                     : horizontalWorld;
-                float panelVerticalWorld = slabPreview
+                float panelVerticalWorld = desktopComposer
                     ? viewHeight * 0.68f
                     : verticalWorld;
                 float scale = Mathf.Min(
@@ -303,7 +306,7 @@ namespace UnityVolumeRendering
                     panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
                     new Vector3(0.5f,
-                        slabPreview ? 0.50f : central ? 0.48f : 0.075f,
+                        desktopComposer ? 0.50f : central ? 0.48f : 0.075f,
                         distance));
                 panel.transform.position = centre;
                 panel.transform.rotation = Quaternion.LookRotation(
