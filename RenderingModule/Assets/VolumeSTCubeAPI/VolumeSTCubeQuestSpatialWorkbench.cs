@@ -331,6 +331,7 @@ namespace UnityVolumeRendering
         private Vector3 desktopAxisOriginalLocalScale = Vector3.one;
         private Vector3 desktopAxisBaseScale = Vector3.one;
         private bool desktopFocusTargetsReady;
+        private bool desktopMatrixPresentationReady;
         private VolumeRenderedObject groundAggregateVolume;
         private VolumeDataset groundAggregateDataset;
         private Texture2D slabTexture;
@@ -669,7 +670,12 @@ namespace UnityVolumeRendering
 
         public bool DesktopTaskPanelIsCentral
         {
-            get { return stage == Stage.DatasetImport; }
+            get { return stage == Stage.DatasetImport || stage == Stage.Matrix; }
+        }
+
+        public bool DesktopMatrixTaskActive
+        {
+            get { return stage == Stage.Matrix; }
         }
 
         public bool DesktopCompactBarActive
@@ -842,6 +848,14 @@ namespace UnityVolumeRendering
             rayInteractor = interactor;
             leftController = leftControllerTransform;
             initialized = true;
+        }
+
+        private void OnEnable()
+        {
+            // Force the active desktop task surface to be reconstructed after a
+            // Unity script-domain reload. Runtime-generated UI objects otherwise
+            // survive visually while retaining the old, partially built layout.
+            desktopMatrixPresentationReady = false;
         }
 
         private void Start()
@@ -8398,6 +8412,8 @@ namespace UnityVolumeRendering
             if (!TryGetIndexRange(activeTimeBuckets[timeIndex], out timeFirst, out timeLast) ||
                 !TryGetIndexRange(activeDepthBuckets[depthIndex], out depthFirst, out depthLast))
                 return false;
+            if (selectedDataset == null)
+                return true;
             timeFirst = Mathf.Clamp(timeFirst, 0, selectedDataset.TimeCount - 1);
             timeLast = Mathf.Clamp(timeLast, timeFirst, selectedDataset.TimeCount - 1);
             depthFirst = Mathf.Clamp(depthFirst, 0, selectedDataset.DimZ - 1);
@@ -8937,7 +8953,10 @@ namespace UnityVolumeRendering
                 BuildStage();
                 return;
             }
-            if (selectedDataset == null && next != Stage.Field)
+            bool matrixResultCanContinue = stage == Stage.Matrix &&
+                next == Stage.Analyze && s4dGridImage != null;
+            if (selectedDataset == null && next != Stage.Field &&
+                !matrixResultCanContinue)
             {
                 SetStatus("Choose a field first.");
                 return;
@@ -8986,7 +9005,11 @@ namespace UnityVolumeRendering
             // Apply the same SDF typography path at every workflow step;
             // later MatPlot and findings panels must not fall back to tiny
             // dynamic-font labels.
-            UpgradeCanvasLabelsToCrispText(panelContent, null);
+            // The Matrix combines many small labels with frequently rebuilt cell
+            // controls. Keeping its native UI Text components avoids transient
+            // empty TMP overlays after a pointer-driven redraw.
+            if (stage != Stage.Matrix)
+                UpgradeCanvasLabelsToCrispText(panelContent, null);
             AnimatePanelRefresh(panelCanvasGroup, ref panelRefreshAnimation);
         }
 
@@ -9563,11 +9586,58 @@ namespace UnityVolumeRendering
                 swapLayout.KeepCurrentShiftedPosition();
         }
 
+        /// <summary>
+        /// Unity's script-domain reload can preserve the generated Matrix texture
+        /// while dropping the plain C# dataset reference that produced it. Restore
+        /// that reference before redrawing the desktop Matrix task surface.
+        /// </summary>
+        private void RestoreSelectedDatasetForMatrix()
+        {
+            if (selectedDataset != null || datasets.Count == 0)
+                return;
+
+            int variableIndex = -1;
+            if (materializationVariableIndices.Count > 0)
+                variableIndex = materializationVariableIndices[
+                    Mathf.Clamp(materializationVariableCursor, 0,
+                        materializationVariableIndices.Count - 1)];
+            if (variableIndex < 0 || variableIndex >= datasets.Count)
+                variableIndex = importSelectedVariableIndex;
+            if (variableIndex < 0 || variableIndex >= datasets.Count)
+            {
+                List<int> activeVariables = ActiveBoundVariableIndices();
+                if (activeVariables.Count > 0)
+                    variableIndex = activeVariables[0];
+            }
+            if (variableIndex < 0 || variableIndex >= datasets.Count)
+                variableIndex = 0;
+
+            selectedDataset = datasets[variableIndex];
+            importSelectedVariableIndex = variableIndex;
+        }
+
         private void UpdateDesktopFocusPresentation()
         {
             if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ||
                 spatialRoot == null || xrCamera == null)
                 return;
+            if (stage != Stage.Matrix)
+                desktopMatrixPresentationReady = false;
+            if (stage == Stage.Matrix && panelCanvas != null &&
+                (!desktopMatrixPresentationReady ||
+                 (intentCanvas != null && intentCanvas.gameObject.activeSelf) ||
+                 (slabPreviewCanvas != null &&
+                  slabPreviewCanvas.gameObject.activeSelf)))
+            {
+                // Also repair an in-progress session after a script reload.
+                // The transition hook below handles new jobs; this guard
+                // cleans stale Step 3 composer panels already left on screen.
+                ShowPrimaryTool(panelCanvas);
+                RestoreSelectedDatasetForMatrix();
+                desktopMatrixPresentationReady = true;
+                BuildStage();
+                VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
+            }
             VolumeSTCubeForVrXytCompanion companion =
                 forVrSurfacePlayer != null
                     ? forVrSurfacePlayer.XytCompanion : null;
@@ -13675,14 +13745,13 @@ namespace UnityVolumeRendering
         {
             CreatePanelCard(panelContent, new Vector2(0, 146), new Vector2(1010, 70), Cyan);
             CreateText(panelContent,
-                "Variable  " + selectedDataset.Name + "     " +
-                    FacetAxisSummary() + "     Mapped  Horizontal",
-                14, FontStyle.Bold, new Vector2(0, 159), new Vector2(950, 24),
+                "VARIABLE  " + (selectedDataset != null
+                    ? selectedDataset.Name : "ACTIVE DATASET") + "     " +
+                    FacetAxisSummary().ToUpperInvariant() + "     MAPPED HORIZONTAL\n" +
+                    "TIME MEAN  EQUAL-FRAME     DEPTH MEAN  VOXEL     " +
+                    "MISSING  EXCLUDED     SCALE  SHARED ACROSS GRID",
+                12, FontStyle.Bold, new Vector2(0, 146), new Vector2(950, 56),
                 TextAnchor.MiddleLeft, Ink);
-            CreateText(panelContent,
-                "Time mean  equal-frame     Depth mean  voxel     Missing  excluded     Scale  shared across Grid",
-                13, FontStyle.Normal, new Vector2(0, 130), new Vector2(950, 22),
-                TextAnchor.MiddleLeft, Muted);
         }
 
         private string MaterializationStageLabel()
@@ -13715,16 +13784,25 @@ namespace UnityVolumeRendering
                 int index = SourceCellIndex(selectedGridColumn, selectedGridRow);
                 int timeIndex = DisplayTimeBucketIndex(selectedGridColumn, selectedGridRow);
                 int depthIndex = DisplayDepthBucketIndex(selectedGridColumn, selectedGridRow);
-                CreateDigestRow("minimum", matrixMinimums[index].ToString("0.##"), 20, Cyan);
-                CreateDigestRow("mean", matrixMeans[index].ToString("0.##"), -27, Green);
-                CreateDigestRow("maximum", matrixMaximums[index].ToString("0.##"), -74, Amber);
+                string datasetName = selectedDataset != null
+                    ? selectedDataset.Name : "ACTIVE DATASET";
+                string timeLabel = selectedDataset != null &&
+                    matrixTimes != null && matrixTimes.Length > 0
+                        ? selectedDataset.GetTimeLabel(matrixTimes[Mathf.Clamp(
+                            timeIndex, 0, matrixTimes.Length - 1)])
+                        : "time bucket " + (timeIndex + 1);
+                string depthLabel = matrixDepths != null && matrixDepths.Length > 0
+                    ? matrixDepths[Mathf.Clamp(depthIndex, 0,
+                        matrixDepths.Length - 1)].ToString()
+                    : (depthIndex + 1).ToString();
                 CreateText(panelContent,
-                    selectedDataset.Name + "\n" +
-                    selectedDataset.GetTimeLabel(matrixTimes[Mathf.Clamp(
-                        timeIndex, 0, matrixTimes.Length - 1)]) +
-                    "  /  z " + matrixDepths[Mathf.Clamp(
-                        depthIndex, 0, matrixDepths.Length - 1)],
-                    13, FontStyle.Normal, new Vector2(400, -139), new Vector2(205, 76),
+                    "FINDINGS\n" +
+                    CellLabel(selectedGridColumn, selectedGridRow).ToUpperInvariant() + "\n" +
+                    "MIN  " + matrixMinimums[index].ToString("0.##") +
+                    "    MEAN  " + matrixMeans[index].ToString("0.##") + "\n" +
+                    "MAX  " + matrixMaximums[index].ToString("0.##") + "\n" +
+                    datasetName + "\n" + timeLabel + "  /  z " + depthLabel,
+                    11, FontStyle.Bold, new Vector2(400, -32), new Vector2(205, 208),
                     TextAnchor.UpperLeft, Ink);
             }
             else
@@ -14076,6 +14154,13 @@ namespace UnityVolumeRendering
         {
             int timeIndex = DisplayTimeBucketIndex(selectedGridColumn, selectedGridRow);
             int depthIndex = DisplayDepthBucketIndex(selectedGridColumn, selectedGridRow);
+            if (selectedDataset == null)
+                return "ACTIVE DATASET\nRepresentative: time bucket " +
+                    (timeIndex + 1) + ", z " +
+                    (matrixDepths != null && matrixDepths.Length > 0
+                        ? matrixDepths[Mathf.Clamp(depthIndex, 0,
+                            matrixDepths.Length - 1)].ToString()
+                        : (depthIndex + 1).ToString());
             return selectedDataset.Name + "\nRepresentative: " +
                 selectedDataset.GetTimeLabel(matrixTimes[Mathf.Clamp(
                     timeIndex, 0, matrixTimes.Length - 1)]) +
@@ -16104,6 +16189,15 @@ namespace UnityVolumeRendering
             variableFacetStackTextures.Clear();
             s4dGridFailure = string.Empty;
             stage = Stage.Matrix;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                panelCanvas != null)
+            {
+                // Matrix is a new desktop task surface. The VR flow leaves the
+                // Intent/facet canvases active as spatial context, which made
+                // them pile up as tiny panels at the bottom of Step 4. Replace
+                // them with the single Matrix progress/result panel instead.
+                ShowPrimaryTool(panelCanvas);
+            }
             int materializeVariableIndex = materializationVariableIndices[
                 Mathf.Clamp(materializationVariableCursor, 0,
                     materializationVariableIndices.Count - 1)];
@@ -16114,6 +16208,8 @@ namespace UnityVolumeRendering
                 materializationVariableIndices.Count + ": " +
                 materializeDataset.Name + "...");
             BuildStage();
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
             if (facetGridCanvas != null && facetGridCanvas.gameObject.activeSelf)
                 BuildFacetGridPanel();
             s4dClient = new VolumeSTCubeS4DAnalysisClient(s4dUrl, 300, 1.0f);
@@ -18077,7 +18173,16 @@ namespace UnityVolumeRendering
             Text text = obj.AddComponent<Text>();
             text.font = font;
             text.text = value;
-            text.fontSize = Mathf.RoundToInt(fontSize * ActiveUiFontScale);
+            float appliedFontScale = ActiveUiFontScale;
+#if UNITY_EDITOR || SLABLAB_FLAT
+            // Matrix labels live in compact chart/detail cells. The general
+            // desktop multiplier made their minimum best-fit size taller than
+            // the label rectangles, so Unity truncated the whole string.
+            if (stage == Stage.Matrix &&
+                VolumeSTCubeQuestBootstrap.IsDesktopPreviewEnabled)
+                appliedFontScale = UiFontScale * 1.22f;
+#endif
+            text.fontSize = Mathf.RoundToInt(fontSize * appliedFontScale);
             text.fontStyle = style;
             text.alignment = anchor;
             text.color = color;
@@ -18094,7 +18199,7 @@ namespace UnityVolumeRendering
                 text.resizeTextForBestFit = true;
                 int desktopMinimum = Mathf.RoundToInt(
                     Mathf.Max(12.0f, fontSize * 0.62f) *
-                    ActiveUiFontScale);
+                    appliedFontScale);
                 text.resizeTextMinSize = Mathf.Min(text.fontSize,
                     desktopMinimum);
                 text.resizeTextMaxSize = text.fontSize;
@@ -18105,7 +18210,7 @@ namespace UnityVolumeRendering
             {
                 text.resizeTextForBestFit = true;
                 text.resizeTextMinSize = Mathf.RoundToInt(
-                    11 * ActiveUiFontScale);
+                    11 * appliedFontScale);
                 text.resizeTextMaxSize = text.fontSize;
             }
             text.raycastTarget = false;

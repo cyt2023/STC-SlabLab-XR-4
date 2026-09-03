@@ -56,6 +56,14 @@ namespace UnityVolumeRendering
             hud.Build();
         }
 
+        public static void NotifyWorkflowChanged()
+        {
+            if (activeHud == null)
+                return;
+            activeHud.RefreshBottomBar();
+            activeHud.DockCurrentTaskInCentre();
+        }
+
         private void Build()
         {
             EnsureEventSystem();
@@ -265,6 +273,8 @@ namespace UnityVolumeRendering
                 return;
             bool central = workbench != null &&
                 workbench.DesktopTaskPanelIsCentral;
+            bool matrix = workbench != null &&
+                workbench.DesktopMatrixTaskActive;
             // Reserve fixed render-safe lanes for both bars. World-space Fields
             // and axis tools are never allowed to render underneath the HUD.
             camera.rect = central
@@ -273,9 +283,10 @@ namespace UnityVolumeRendering
             float distance = 2.05f;
             float viewHeight = 2.0f * distance * Mathf.Tan(
                 camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            float verticalWorld = viewHeight * (central ? 0.68f : 0.135f);
+            float verticalWorld = viewHeight *
+                (matrix ? 0.80f : central ? 0.68f : 0.135f);
             float horizontalWorld = viewHeight * camera.aspect *
-                (central ? 0.86f : 0.94f);
+                (matrix ? 0.92f : central ? 0.86f : 0.94f);
             for (int index = 0; index < workflowPanels.Count; index++)
             {
                 Canvas panel = workflowPanels[index];
