@@ -378,6 +378,7 @@ namespace UnityVolumeRendering
         private string s4dSharedUnit = string.Empty;
         private VolumeSTCubeS4DAnalysisClient s4dClient;
         private bool datasetManifestResolving;
+        private bool resumeMaterializationAfterManifest;
         private string datasetManifestError = string.Empty;
         private bool groundAggregateLoading;
         private float groundSnapshotCellMean = float.NaN;
@@ -15025,6 +15026,7 @@ namespace UnityVolumeRendering
                 return;
             if (resolution == null)
             {
+                resumeMaterializationAfterManifest = false;
                 datasetManifestError = string.IsNullOrWhiteSpace(error)
                     ? "No validated S4D manifest matches this variable."
                     : error;
@@ -15042,6 +15044,13 @@ namespace UnityVolumeRendering
                 selectedDataset.Name + " linked to manifest " +
                 resolution.datasetId + " / " + resolution.datasetVersion + ".");
             BuildStage();
+            if (resumeMaterializationAfterManifest &&
+                spatialWorkflowStep == SpatialWorkflowStep.Materializing)
+            {
+                resumeMaterializationAfterManifest = false;
+                SetStatus("Dataset metadata restored. Continuing Full Matrix materialization.");
+                StartS4DGridJob();
+            }
         }
 
         /// <summary>
@@ -16049,9 +16058,10 @@ namespace UnityVolumeRendering
             }
             if (!HasResolvedDatasetManifest())
             {
-                SetStatus(datasetManifestResolving
-                    ? "Waiting for validated dataset metadata..."
-                    : "Full Matrix blocked: " + datasetManifestError);
+                resumeMaterializationAfterManifest = true;
+                if (!datasetManifestResolving)
+                    ResolveSelectedDatasetManifest();
+                SetStatus("Restoring validated dataset metadata, then Full Matrix will continue automatically...");
                 return;
             }
             if (materializationVariableCursor < 0)
