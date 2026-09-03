@@ -9667,6 +9667,15 @@ namespace UnityVolumeRendering
 
         private void OpenDatasetImportStage()
         {
+            // The header Previous button can leave Step 2 while the dedicated
+            // time-range canvas is still active. Close that edit session first;
+            // changing only the Stage leaves the orange boundary bar enabled on
+            // top of the dataset page.
+            if (boundaryEditActive)
+                CancelBoundaryEdit();
+            else if (boundaryCanvas != null)
+                boundaryCanvas.gameObject.SetActive(false);
+
             datasetImportConfirmed = false;
             preconfigurationActive = false;
             mainWorkspaceEntered = false;
