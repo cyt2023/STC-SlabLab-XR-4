@@ -577,8 +577,13 @@ namespace UnityVolumeRendering
 
         private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (ShouldInstall)
-                VolumeSTCubeQuestCompatibilityGuard.SuppressDesktopOnlyBehaviours();
+            if (!ShouldInstall)
+                return;
+            VolumeSTCubeQuestCompatibilityGuard.SuppressDesktopOnlyBehaviours();
+            // The opening-page mode selector reloads the active scene. Runtime
+            // initialization attributes run once per player session, so rebuild
+            // the selected rig explicitly on every subsequent scene load.
+            Install();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

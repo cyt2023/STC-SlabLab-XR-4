@@ -89,10 +89,7 @@ namespace VolumeSTCubeQuest.EditorTools
 
         private static void SetMode(VolumeSTCubeApplicationMode mode)
         {
-            EditorPrefs.SetString(VolumeSTCubeMode.EditorPreferenceKey,
-                mode.ToString());
-            EditorPrefs.SetBool(VolumeSTCubeMode.LegacyDesktopPreferenceKey,
-                mode == VolumeSTCubeApplicationMode.Desktop);
+            VolumeSTCubeMode.SetStartupPreference(mode);
             RefreshModeChecks();
             Debug.Log("SlabLab application mode: " + mode + ".");
         }

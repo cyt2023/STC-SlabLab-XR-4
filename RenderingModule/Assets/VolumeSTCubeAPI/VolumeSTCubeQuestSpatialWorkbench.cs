@@ -400,9 +400,7 @@ namespace UnityVolumeRendering
         private int importSelectedVariableIndex = -1;
         private bool preconfigurationActive;
         private bool mainWorkspaceEntered;
-#if !UNITY_EDITOR && !SLABLAB_FLAT
         private bool questImportHeadLocked;
-#endif
         private bool initialized;
         private bool draggingSlab;
         private float slabDragOffset;
@@ -836,38 +834,32 @@ namespace UnityVolumeRendering
                 stage = Stage.DatasetImport;
                 BuildStage();
             }
-#if UNITY_EDITOR || SLABLAB_FLAT
+            // Dataset Import is the first workflow step on Quest as well as on
+            // desktop. Mode-specific placement is selected at runtime so an
+            // Editor VR preview cannot accidentally execute the desktop branch.
             panelCanvas.gameObject.SetActive(true);
             mainMenuCanvas.gameObject.SetActive(false);
             slabPreviewCanvas.gameObject.SetActive(false);
             intentCanvas.gameObject.SetActive(false);
             aiFindingsCanvas.gameObject.SetActive(false);
             workflowToolbarCanvas.gameObject.SetActive(false);
-#else
-            // Dataset Import is the first workflow step on Quest as well as on
-            // desktop. Hiding every tool here left a new headset user looking at
-            // an empty room until they discovered the controller shortcut.
-            panelCanvas.gameObject.SetActive(true);
-            mainMenuCanvas.gameObject.SetActive(false);
-            slabPreviewCanvas.gameObject.SetActive(false);
-                intentCanvas.gameObject.SetActive(false);
-            aiFindingsCanvas.gameObject.SetActive(false);
-            workflowToolbarCanvas.gameObject.SetActive(false);
-            questImportHeadLocked = true;
-            if (spatialRoot != null)
-                spatialRoot.SetActive(false);
-            StartCoroutine(PlaceInitialQuestWorkspace());
-#endif
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                questImportHeadLocked = false;
+            else
+            {
+                questImportHeadLocked = true;
+                if (spatialRoot != null)
+                    spatialRoot.SetActive(false);
+                StartCoroutine(PlaceInitialQuestWorkspace());
+            }
         }
 
         public void RecenterQuestWorkspace()
         {
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            StartCoroutine(PlaceInitialQuestWorkspace());
-#endif
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                StartCoroutine(PlaceInitialQuestWorkspace());
         }
 
-#if !UNITY_EDITOR && !SLABLAB_FLAT
         private IEnumerator PlaceInitialQuestWorkspace()
         {
             // OpenXR tracking poses are not guaranteed to be available during
@@ -985,13 +977,10 @@ namespace UnityVolumeRendering
             canvas.transform.localScale = Vector3.one * worldScale;
             FacePanelTowardViewer(canvas.transform);
         }
-#endif
-
         private void Update()
         {
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            UpdateQuestImportHeadLock();
-#endif
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                UpdateQuestImportHeadLock();
             UpdateKeyboard();
             UpdateSlabInteraction();
             UpdateTimeBoundaryInteraction();
@@ -1146,10 +1135,9 @@ namespace UnityVolumeRendering
                 ShowComposerTool(slabPreviewCanvas);
                 BuildSlabPreviewPanel();
             }
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            if (leftController != null)
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                leftController != null)
                 PlaceSlabFrameNearLeftHand();
-#endif
         }
 
         private void ShowPrimaryTool(Canvas tool)
@@ -1336,9 +1324,8 @@ namespace UnityVolumeRendering
                         hit.collider.GetComponentInParent<VolumeSTCubeQuestPanelHandle>();
                     if (handle != null)
                     {
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-                        questImportHeadLocked = false;
-#endif
+                        if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                            questImportHeadLocked = false;
                         grabbedPanel = handle.transform;
                         if (workflowToolbarCanvas != null &&
                             grabbedPanel == workflowToolbarCanvas.transform)
@@ -9119,10 +9106,40 @@ namespace UnityVolumeRendering
                 importSelectedVariableIndex >= 0 ? Cyan : Card,
                 ConfirmDatasetImport);
 
+            // Mode selection belongs on the opening page and remains separate
+            // from dataset choice. Reloading the scene rebuilds the complete rig
+            // from one locked mode instead of mutating a live desktop/VR rig.
+            CreateText(panelContent, "MODE", 17, FontStyle.Bold,
+                new Vector2(120, -230), new Vector2(110, 48),
+                TextAnchor.MiddleRight, Muted);
+            VolumeSTCubeApplicationMode activeMode = VolumeSTCubeMode.Current;
+            CreateButton(panelContent, "DESKTOP",
+                new Vector2(265, -230), new Vector2(180, 54),
+                activeMode == VolumeSTCubeApplicationMode.Desktop ? Cyan : Card,
+                () => SelectApplicationMode(VolumeSTCubeApplicationMode.Desktop));
+            CreateButton(panelContent, "VR",
+                new Vector2(425, -230), new Vector2(110, 54),
+                activeMode == VolumeSTCubeApplicationMode.VirtualReality ? Cyan : Card,
+                () => SelectApplicationMode(
+                    VolumeSTCubeApplicationMode.VirtualReality));
+
             // The opening screen is the user's first readability checkpoint.
             // Use the largest SDF glyphs that fit the existing content and
             // button rectangles; no panel or control geometry is changed.
             UpgradeCanvasLabelsToCrispText(panelContent, null);
+        }
+
+        private void SelectApplicationMode(VolumeSTCubeApplicationMode mode)
+        {
+            if (VolumeSTCubeMode.Current == mode)
+            {
+                SetStatus(mode == VolumeSTCubeApplicationMode.Desktop
+                    ? "Desktop mode is active."
+                    : "VR mode is active.");
+                BuildStage();
+                return;
+            }
+            VolumeSTCubeMode.SelectAndReload(mode);
         }
 
         private void SelectAnalysisTask(AnalysisTaskMode mode)
@@ -9247,10 +9264,11 @@ namespace UnityVolumeRendering
             authoredDepthBuckets = null;
             ResetAxisBucketSelection();
             stage = Stage.DatasetImport;
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            questImportHeadLocked = true;
-            UpdateQuestImportHeadLock(true);
-#endif
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                questImportHeadLocked = true;
+                UpdateQuestImportHeadLock(true);
+            }
             if (spatialRoot != null)
                 spatialRoot.SetActive(false);
             PlayerPrefs.SetString("VolumeSTCube.Quest.DatasetRoot", Path.GetFullPath(result.path));
@@ -9280,10 +9298,10 @@ namespace UnityVolumeRendering
             authoredDepthBuckets = null;
             ResetAxisBucketSelection();
             stage = Stage.Field;
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            questImportHeadLocked = false;
-            if (xrCamera != null)
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                xrCamera != null)
             {
+                questImportHeadLocked = false;
                 Vector3 forward = Vector3.ProjectOnPlane(
                     xrCamera.transform.forward, Vector3.up).normalized;
                 if (forward.sqrMagnitude < 0.01f)
@@ -9291,7 +9309,6 @@ namespace UnityVolumeRendering
                 Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
                 PlaceQuestAnalysisWorkspace(xrCamera.transform.position, forward, right);
             }
-#endif
             if (spatialRoot != null)
                 spatialRoot.SetActive(true);
             if (workflowToolbarCanvas != null)
@@ -9659,10 +9676,11 @@ namespace UnityVolumeRendering
             importSelectedVariableIndex = selectedDataset != null
                 ? datasets.IndexOf(selectedDataset) : -1;
             stage = Stage.DatasetImport;
-#if !UNITY_EDITOR && !SLABLAB_FLAT
-            questImportHeadLocked = true;
-            UpdateQuestImportHeadLock(true);
-#endif
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                questImportHeadLocked = true;
+                UpdateQuestImportHeadLock(true);
+            }
             if (spatialRoot != null)
                 spatialRoot.SetActive(false);
             if (workflowToolbarCanvas != null)
