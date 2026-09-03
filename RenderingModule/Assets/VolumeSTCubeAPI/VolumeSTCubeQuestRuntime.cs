@@ -49,6 +49,7 @@ namespace UnityVolumeRendering
     public sealed class VolumeSTCubeQuestClickTarget : MonoBehaviour
     {
         public Action Clicked;
+        public bool AllowDesktopMouseDown;
         private Graphic graphic;
         private Color normalColor;
         private Outline outline;
@@ -108,7 +109,11 @@ namespace UnityVolumeRendering
             // GraphicRaycaster is unreliable on a steep perspective canvas,
             // so desktop preview clicks use the same collider-backed path.
             if (VolumeSTCubeQuestBootstrap.IsDesktopPreviewEnabled)
+            {
+                if (AllowDesktopMouseDown)
+                    Invoke();
                 return;
+            }
             Invoke();
         }
 #endif

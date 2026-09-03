@@ -1657,7 +1657,7 @@ namespace UnityVolumeRendering
             // The animated Field is shifted left and the independent XYT Field
             // occupies the presentation center. Dock the tri-axis body beyond
             // the XYT Field's right edge instead of beside the old Field.
-            return VolumeSTCubeForVrFieldSwapLayout.Separation +
+            return VolumeSTCubeForVrFieldSwapLayout.ActiveSeparation +
                 VolumeSTCubeForVrXytCompanion.IndependentFieldHalfWidth + 0.48f;
         }
 
@@ -9408,12 +9408,16 @@ namespace UnityVolumeRendering
                 desktopBoundaryFieldPosition = spatialRoot.transform.position;
                 desktopOverviewFieldPosition = desktopBoundaryFieldPosition +
                     spatialRoot.transform.right *
-                    (VolumeSTCubeForVrFieldSwapLayout.Separation * 0.5f);
+                    (VolumeSTCubeForVrFieldSwapLayout.ActiveSeparation * 0.5f);
                 desktopFieldScale = spatialRoot.transform.localScale;
                 desktopVisualizationAligned = true;
             }
             spatialRoot.transform.position = desktopOverviewFieldPosition;
             spatialRoot.transform.localScale = desktopFieldScale * 0.78f;
+            VolumeSTCubeForVrFieldSwapLayout swapLayout =
+                spatialRoot.GetComponent<VolumeSTCubeForVrFieldSwapLayout>();
+            if (swapLayout != null)
+                swapLayout.KeepCurrentShiftedPosition();
             if (forVrSurfacePlayer != null)
                 forVrSurfacePlayer.SetSurfaceContextVisible(true);
         }
@@ -9425,6 +9429,10 @@ namespace UnityVolumeRendering
                 return;
             spatialRoot.transform.position = desktopBoundaryFieldPosition;
             spatialRoot.transform.localScale = desktopFieldScale;
+            VolumeSTCubeForVrFieldSwapLayout swapLayout =
+                spatialRoot.GetComponent<VolumeSTCubeForVrFieldSwapLayout>();
+            if (swapLayout != null)
+                swapLayout.KeepCurrentShiftedPosition();
         }
 
         private bool HasSavedAuthorBoundaries()

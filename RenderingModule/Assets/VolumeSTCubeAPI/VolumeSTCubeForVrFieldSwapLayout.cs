@@ -11,6 +11,11 @@ namespace UnityVolumeRendering
     internal sealed class VolumeSTCubeForVrFieldSwapLayout : MonoBehaviour
     {
         public const float Separation = 2.15f;
+        public const float DesktopSeparation = 1.72f;
+
+        public static float ActiveSeparation =>
+            VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled
+                ? DesktopSeparation : Separation;
 
         private int users;
         private Vector3 expectedShiftedPosition;
@@ -33,7 +38,12 @@ namespace UnityVolumeRendering
             if (users != 0)
                 return;
             RestoreDatasetSelectorPosition();
-            transform.position += transform.right * Separation;
+            transform.position += transform.right * ActiveSeparation;
+            expectedShiftedPosition = transform.position;
+        }
+
+        public void KeepCurrentShiftedPosition()
+        {
             expectedShiftedPosition = transform.position;
         }
 
@@ -51,7 +61,7 @@ namespace UnityVolumeRendering
 
         private void ApplyShift()
         {
-            transform.position -= transform.right * Separation;
+            transform.position -= transform.right * ActiveSeparation;
             expectedShiftedPosition = transform.position;
         }
 
@@ -72,8 +82,11 @@ namespace UnityVolumeRendering
             // The animated Field is at local 0 and the XYT Field is one
             // Separation to its right. Put the shared variable selector at the
             // midpoint of their upper edges so it visually belongs to both.
+            float desktopCentreCorrection =
+                VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ? 0.36f : 0.0f;
             datasetSelector.localPosition = datasetSelectorOriginalLocalPosition +
-                Vector3.right * (Separation * 0.5f);
+                Vector3.right * (ActiveSeparation * 0.5f +
+                    desktopCentreCorrection);
         }
 
         private void RestoreDatasetSelectorPosition()

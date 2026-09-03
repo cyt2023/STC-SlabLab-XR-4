@@ -523,7 +523,7 @@ namespace UnityVolumeRendering
             if (fieldRoot == null)
                 return;
             fieldRoot.transform.position = transform.position +
-                transform.right * VolumeSTCubeForVrFieldSwapLayout.Separation;
+                transform.right * VolumeSTCubeForVrFieldSwapLayout.ActiveSeparation;
             fieldRoot.transform.rotation = transform.rotation;
             fieldRoot.transform.localScale = transform.localScale;
         }
@@ -1506,6 +1506,7 @@ namespace UnityVolumeRendering
 
         private void BuildControls()
         {
+            bool desktop = VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled;
             controlsRoot = new GameObject("For_VR XYT Controls", typeof(RectTransform),
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             controlsRoot.transform.SetParent(fieldRoot.transform, false);
@@ -1514,16 +1515,20 @@ namespace UnityVolumeRendering
             canvas.worldCamera = Camera.main;
             canvas.sortingOrder = 360;
             RectTransform rect = controlsRoot.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(1880, 250);
+            rect.sizeDelta = desktop
+                ? new Vector2(1560, 310)
+                : new Vector2(1880, 250);
             float frontSign = Camera.main != null &&
                 fieldRoot.transform.InverseTransformPoint(
                     Camera.main.transform.position).z >= 0
                     ? 1.0f : -1.0f;
-            rect.localPosition = new Vector3(0.0f, 0.62f,
+            rect.localPosition = new Vector3(0.0f,
+                desktop ? 0.66f : 0.62f,
                 frontSign * (FieldHalfDepth + 0.035f));
             rect.localRotation = Quaternion.LookRotation(
                 new Vector3(0, 0, -frontSign), Vector3.up);
-            rect.localScale = Vector3.one * ControlCanvasScale;
+            rect.localScale = Vector3.one *
+                (desktop ? 0.00086f : ControlCanvasScale);
             controlsRoot.GetComponent<CanvasScaler>().dynamicPixelsPerUnit = 32;
 
             RectTransform panel = CreateRect("Panel", controlsRoot.transform);
@@ -1532,24 +1537,34 @@ namespace UnityVolumeRendering
             background.color = new Color(0.012f, 0.05f, 0.072f, 0.94f);
             Outline outline = panel.gameObject.AddComponent<Outline>();
             outline.effectColor = new Color(0.0f, 0.8f, 0.9f, 0.8f);
-            eventText = CreateText(panel, "INDEPENDENT XYT FIELD", 42,
-                new Vector2(20, 184),
-                new Vector2(1840, 50), TextAnchor.MiddleCenter);
-            selectionText = CreateText(panel, "SPOTLIGHT", 31,
-                new Vector2(20, 132), new Vector2(1840, 42), TextAnchor.MiddleCenter);
+            eventText = CreateText(panel, "INDEPENDENT XYT FIELD",
+                desktop ? 52 : 42,
+                desktop ? new Vector2(20, 240) : new Vector2(20, 184),
+                new Vector2(rect.sizeDelta.x - 40, desktop ? 58 : 50),
+                TextAnchor.MiddleCenter);
+            selectionText = CreateText(panel, "SPOTLIGHT",
+                desktop ? 39 : 31,
+                desktop ? new Vector2(20, 180) : new Vector2(20, 132),
+                new Vector2(rect.sizeDelta.x - 40, desktop ? 48 : 42),
+                TextAnchor.MiddleCenter);
 
-            float x = 430;
-            CreateButton(panel, "EVENT <", x, () => StepEvent(-1)); x += 202;
-            CreateButton(panel, "EVENT >", x, () => StepEvent(1)); x += 202;
+            float buttonWidth = desktop ? 250.0f : 184.0f;
+            float buttonGap = desktop ? 18.0f : 18.0f;
+            float x = (rect.sizeDelta.x -
+                (buttonWidth * 4.0f + buttonGap * 3.0f)) * 0.5f;
+            CreateButton(panel, "EVENT <", x, () => StepEvent(-1));
+            x += buttonWidth + buttonGap;
+            CreateButton(panel, "EVENT >", x, () => StepEvent(1));
+            x += buttonWidth + buttonGap;
             Button mode = CreateButton(panel, "DRILL DOWN", x, ToggleMode);
             modeButtonText = mode.GetComponentInChildren<TextMeshProUGUI>();
-            x += 202;
+            x += buttonWidth + buttonGap;
             Button allEvents = CreateButton(panel, "ALL 6 EVENTS", x,
                 ToggleAllEvents);
             allEventsButtonText =
                 allEvents.GetComponentInChildren<TextMeshProUGUI>();
             if (allEventsButtonText != null)
-                allEventsButtonText.fontSize = 25;
+                allEventsButtonText.fontSize = desktop ? 34 : 25;
         }
 
         private void StepEvent(int direction)
@@ -1776,11 +1791,14 @@ namespace UnityVolumeRendering
         private Button CreateButton(Transform parent, string label, float x,
             UnityEngine.Events.UnityAction action)
         {
+            bool desktop = VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled;
+            float width = desktop ? 250.0f : 184.0f;
+            float height = desktop ? 108.0f : 88.0f;
             RectTransform rect = CreateRect(label + " Button", parent);
             rect.anchorMin = rect.anchorMax = new Vector2(0, 0);
             rect.pivot = new Vector2(0, 0);
-            rect.anchoredPosition = new Vector2(x, 24);
-            rect.sizeDelta = new Vector2(184, 88);
+            rect.anchoredPosition = new Vector2(x, desktop ? 30.0f : 24.0f);
+            rect.sizeDelta = new Vector2(width, height);
             Image image = rect.gameObject.AddComponent<Image>();
             image.color = new Color(0.06f, 0.28f, 0.35f, 1.0f);
             Button button = rect.gameObject.AddComponent<Button>();
@@ -1791,11 +1809,14 @@ namespace UnityVolumeRendering
             rect.gameObject.layer = UiLayer;
             BoxCollider collider = rect.gameObject.AddComponent<BoxCollider>();
             collider.isTrigger = true;
-            collider.size = new Vector3(184, 88, 20);
-            collider.center = new Vector3(92, 44, 0);
-            rect.gameObject.AddComponent<VolumeSTCubeQuestClickTarget>().Clicked =
-                () => InvokeControlOnce(action);
-            CreateText(rect, label, 30, Vector2.zero, new Vector2(184, 88),
+            collider.size = new Vector3(width, height, 20);
+            collider.center = new Vector3(width * 0.5f, height * 0.5f, 0);
+            VolumeSTCubeQuestClickTarget clickTarget =
+                rect.gameObject.AddComponent<VolumeSTCubeQuestClickTarget>();
+            clickTarget.AllowDesktopMouseDown = true;
+            clickTarget.Clicked = () => InvokeControlOnce(action);
+            CreateText(rect, label, desktop ? 38 : 30, Vector2.zero,
+                new Vector2(width, height),
                 TextAnchor.MiddleCenter);
             return button;
         }

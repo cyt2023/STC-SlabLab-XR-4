@@ -564,16 +564,21 @@ namespace UnityVolumeRendering
             }
             // Its top edge touches the Field ground edge while the panel stays
             // immediately in front of the Field.
-            float panelHalfHeight = TimelinePanelHeight * TimelineCanvasScale * 0.5f;
+            float activeTimelineScale =
+                VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled
+                    ? 0.00135f : TimelineCanvasScale;
+            float panelHalfHeight = TimelinePanelHeight * activeTimelineScale * 0.5f;
             canvasRect.localPosition = new Vector3(0.0f,
-                GroundLayerPosition.y - panelHalfHeight,
+                GroundLayerPosition.y - panelHalfHeight +
+                    (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled
+                        ? 0.28f : 0.0f),
                 frontSign * 0.72f);
             // A world-space Canvas renders its readable face opposite its
             // Transform.forward direction. Pointing forward at the camera made
             // the viewer see the back of every glyph (horizontally mirrored).
             canvasRect.localRotation = Quaternion.LookRotation(
                 new Vector3(0.0f, 0.0f, -frontSign), Vector3.up);
-            canvasRect.localScale = Vector3.one * TimelineCanvasScale;
+            canvasRect.localScale = Vector3.one * activeTimelineScale;
             CanvasScaler scaler = timelineCanvas.GetComponent<CanvasScaler>();
             scaler.dynamicPixelsPerUnit = 32.0f;
 
@@ -1249,8 +1254,10 @@ namespace UnityVolumeRendering
             collider.size = new Vector3(dimensions.x, dimensions.y, 16.0f);
             collider.center = new Vector3(
                 dimensions.x * 0.5f, dimensions.y * 0.5f, 0.0f);
-            rect.gameObject.AddComponent<VolumeSTCubeQuestClickTarget>().Clicked = () =>
-                InvokeControlOnce(action);
+            VolumeSTCubeQuestClickTarget clickTarget =
+                rect.gameObject.AddComponent<VolumeSTCubeQuestClickTarget>();
+            clickTarget.AllowDesktopMouseDown = true;
+            clickTarget.Clicked = () => InvokeControlOnce(action);
             TextMeshProUGUI text = CreateText(rect, label, 44, Vector2.zero,
                 dimensions, TextAnchor.MiddleCenter);
             text.fontSizeMin = 28.0f;
