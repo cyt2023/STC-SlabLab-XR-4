@@ -569,9 +569,7 @@ namespace UnityVolumeRendering
                     ? 0.00135f : TimelineCanvasScale;
             float panelHalfHeight = TimelinePanelHeight * activeTimelineScale * 0.5f;
             canvasRect.localPosition = new Vector3(0.0f,
-                GroundLayerPosition.y - panelHalfHeight +
-                    (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled
-                        ? 0.28f : 0.0f),
+                GroundLayerPosition.y - panelHalfHeight,
                 frontSign * 0.72f);
             // A world-space Canvas renders its readable face opposite its
             // Transform.forward direction. Pointing forward at the camera made

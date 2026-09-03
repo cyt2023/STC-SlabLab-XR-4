@@ -9403,8 +9403,11 @@ namespace UnityVolumeRendering
                 // First establish the position where the independent STC is
                 // centred by itself. The overview position then centres the
                 // midpoint between the surface Field and STC Field.
+                // Keep the complete two-Field composition centred in the
+                // desktop viewport.  The former offset centred the left Field
+                // itself and left the companion clipped by the right edge.
                 spatialRoot.transform.position +=
-                    xrCamera.transform.right * 0.74f;
+                    xrCamera.transform.right * 0.12f;
                 // This anchored position centres the midpoint of the compact
                 // desktop pair. Boundary editing then moves the pair left by
                 // half its separation so the remaining STC is centred alone.

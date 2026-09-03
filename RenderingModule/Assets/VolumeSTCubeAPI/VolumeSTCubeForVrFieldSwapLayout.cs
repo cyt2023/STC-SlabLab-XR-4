@@ -82,11 +82,8 @@ namespace UnityVolumeRendering
             // The animated Field is at local 0 and the XYT Field is one
             // Separation to its right. Put the shared variable selector at the
             // midpoint of their upper edges so it visually belongs to both.
-            float desktopCentreCorrection =
-                VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ? 0.36f : 0.0f;
             datasetSelector.localPosition = datasetSelectorOriginalLocalPosition +
-                Vector3.right * (ActiveSeparation * 0.5f +
-                    desktopCentreCorrection);
+                Vector3.right * (ActiveSeparation * 0.5f);
         }
 
         private void RestoreDatasetSelectorPosition()
