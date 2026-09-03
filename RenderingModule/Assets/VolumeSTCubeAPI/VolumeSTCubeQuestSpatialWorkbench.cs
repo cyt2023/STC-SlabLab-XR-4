@@ -691,6 +691,16 @@ namespace UnityVolumeRendering
             get { return AreSpatialAxisBindingsComplete(out _); }
         }
 
+        public bool DesktopSlabPreviewActive
+        {
+            get
+            {
+                return stage == Stage.Slab && slabPreviewBuilt &&
+                    slabPreviewCanvas != null &&
+                    slabPreviewCanvas.gameObject.activeSelf;
+            }
+        }
+
         public string DesktopAxisBindingLabel
         {
             get
@@ -9536,6 +9546,27 @@ namespace UnityVolumeRendering
             // path entered it. Tying it to mainWorkspaceEntered left the axis
             // area empty after some valid time-range transitions.
             bool slabLayout = stage == Stage.Slab;
+            // GENERATE SLAB replaces the three visualization work areas with
+            // one readable task panel. Keeping both layers visible would put
+            // world content behind the panel and violate the desktop layout's
+            // non-overlap rule.
+            bool slabPreview = DesktopSlabPreviewActive;
+            if (slabPreview)
+            {
+                if (desktopFocusAnimation != null)
+                    StopCoroutine(desktopFocusAnimation);
+                desktopFocusAnimation = null;
+                spatialRoot.SetActive(false);
+                companion.DesktopFieldTransform.gameObject.SetActive(false);
+                if (spatialAxisComposerRoot != null)
+                    spatialAxisComposerRoot.SetActive(false);
+                return;
+            }
+            if (slabLayout)
+            {
+                spatialRoot.SetActive(true);
+                companion.DesktopFieldTransform.gameObject.SetActive(true);
+            }
             if (timeSelection)
             {
                 if (desktopFocusView != DesktopFocusView.TimeSurface &&

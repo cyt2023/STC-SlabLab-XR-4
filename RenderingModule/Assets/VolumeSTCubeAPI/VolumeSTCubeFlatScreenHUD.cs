@@ -279,7 +279,11 @@ namespace UnityVolumeRendering
                 Canvas panel = workflowPanels[index];
                 if (panel == null || !panel.gameObject.activeInHierarchy)
                     continue;
-                if (workbench != null && workbench.DesktopCompactBarActive)
+                bool slabPreview = workbench != null &&
+                    workbench.DesktopSlabPreviewActive &&
+                    panel.name == "FacetSlab Configuration Preview";
+                if (workbench != null && workbench.DesktopCompactBarActive &&
+                    !slabPreview)
                 {
                     panel.enabled = false;
                     continue;
@@ -288,11 +292,19 @@ namespace UnityVolumeRendering
                 RectTransform rect = panel.GetComponent<RectTransform>();
                 if (rect == null)
                     continue;
+                float panelHorizontalWorld = slabPreview
+                    ? viewHeight * camera.aspect * 0.72f
+                    : horizontalWorld;
+                float panelVerticalWorld = slabPreview
+                    ? viewHeight * 0.68f
+                    : verticalWorld;
                 float scale = Mathf.Min(
-                    horizontalWorld / Mathf.Max(1.0f, rect.sizeDelta.x),
-                    verticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
+                    panelHorizontalWorld / Mathf.Max(1.0f, rect.sizeDelta.x),
+                    panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
-                    new Vector3(0.5f, central ? 0.48f : 0.075f, distance));
+                    new Vector3(0.5f,
+                        slabPreview ? 0.50f : central ? 0.48f : 0.075f,
+                        distance));
                 panel.transform.position = centre;
                 panel.transform.rotation = Quaternion.LookRotation(
                     centre - camera.transform.position, camera.transform.up);
