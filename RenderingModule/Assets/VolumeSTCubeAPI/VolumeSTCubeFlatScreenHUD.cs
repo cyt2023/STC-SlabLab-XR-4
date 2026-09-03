@@ -12,6 +12,18 @@ namespace UnityVolumeRendering
     /// </summary>
     public sealed class VolumeSTCubeFlatScreenHUD : MonoBehaviour
     {
+        private static readonly Color PrimaryAction =
+            new Color(0.00f, 0.67f, 0.78f, 1.0f);
+        private static readonly Color ConfirmAction =
+            new Color(0.88f, 0.53f, 0.06f, 1.0f);
+        private static readonly Color SecondaryAction =
+            new Color(0.07f, 0.28f, 0.38f, 1.0f);
+        private static readonly Color UtilityAction =
+            new Color(0.18f, 0.18f, 0.29f, 1.0f);
+        private static readonly Color BackAction =
+            new Color(0.34f, 0.19f, 0.22f, 1.0f);
+        private static readonly Color HelpAction =
+            new Color(0.30f, 0.18f, 0.42f, 1.0f);
         private static VolumeSTCubeFlatScreenHUD activeHud;
         private VolumeSTCubeQuestSpatialWorkbench workbench;
         private RectTransform safeAreaRoot;
@@ -92,12 +104,13 @@ namespace UnityVolumeRendering
             actions.childForceExpandHeight = true;
 
             CreateButton("Previous", actionBar,
-                workbench.DesktopPreviousStep, 160.0f);
+                workbench.DesktopPreviousStep, 160.0f, BackAction);
             CreateButton("Next", actionBar,
-                workbench.DesktopNextStep, 160.0f);
+                workbench.DesktopNextStep, 160.0f, PrimaryAction);
             CreateButton("Reset View", actionBar,
-                workbench.ResetVolumeLayout, 170.0f);
-            CreateButton("Help", actionBar, ToggleHelp, 130.0f);
+                workbench.ResetVolumeLayout, 170.0f, UtilityAction);
+            CreateButton("Help", actionBar, ToggleHelp, 130.0f,
+                HelpAction);
 
             bottomBar = CreatePanel("Desktop Work Bar", safeAreaRoot,
                 new Color(0.018f, 0.043f, 0.064f, 0.985f));
@@ -123,15 +136,16 @@ namespace UnityVolumeRendering
             bottomStatusText.fontStyle = FontStyle.Bold;
             bottomStatusText.alignment = TextAnchor.MiddleLeft;
             primaryButton = CreateButton("SET TIME RANGE", bottomRect,
-                workbench.DesktopOpenFieldSetup, 420.0f);
+                workbench.DesktopOpenFieldSetup, 420.0f, ConfirmAction);
             playbackButton = CreateButton("PLAY", bottomRect,
-                workbench.DesktopTogglePlayback, 150.0f);
+                workbench.DesktopTogglePlayback, 150.0f, PrimaryAction);
             speedButton = CreateButton("SPEED 1x", bottomRect,
-                workbench.DesktopCyclePlaybackSpeed, 180.0f);
+                workbench.DesktopCyclePlaybackSpeed, 180.0f,
+                SecondaryAction);
             backButton = CreateButton("BACK", bottomRect,
-                workbench.DesktopCancelBoundary, 150.0f);
+                workbench.DesktopCancelBoundary, 150.0f, BackAction);
             confirmButton = CreateButton("CONFIRM TIME RANGE", bottomRect,
-                workbench.DesktopConfirmBoundary, 300.0f);
+                workbench.DesktopConfirmBoundary, 300.0f, ConfirmAction);
             bottomBar.SetActive(false);
 
             helpPanel = CreatePanel("Help", safeAreaRoot,
@@ -232,9 +246,11 @@ namespace UnityVolumeRendering
                 return;
             bool central = workbench != null &&
                 workbench.DesktopTaskPanelIsCentral;
+            // Reserve fixed render-safe lanes for both bars. World-space Fields
+            // and axis tools are never allowed to render underneath the HUD.
             camera.rect = central
                 ? new Rect(0.0f, 0.0f, 1.0f, 0.86f)
-                : new Rect(0.0f, 0.0f, 1.0f, 1.0f);
+                : new Rect(0.0f, 0.10f, 1.0f, 0.765f);
             float distance = 2.05f;
             float viewHeight = 2.0f * distance * Mathf.Tan(
                 camera.fieldOfView * 0.5f * Mathf.Deg2Rad);
@@ -345,11 +361,18 @@ namespace UnityVolumeRendering
         private static Button CreateButton(string label, Transform parent,
             UnityEngine.Events.UnityAction action, float width)
         {
+            return CreateButton(label, parent, action, width,
+                SecondaryAction);
+        }
+
+        private static Button CreateButton(string label, Transform parent,
+            UnityEngine.Events.UnityAction action, float width, Color fill)
+        {
             GameObject buttonObject = new GameObject(label, typeof(RectTransform),
                 typeof(Image), typeof(Button), typeof(LayoutElement));
             buttonObject.transform.SetParent(parent, false);
             Image image = buttonObject.GetComponent<Image>();
-            image.color = new Color(0.07f, 0.28f, 0.38f, 1.0f);
+            image.color = fill;
             Button button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(action);

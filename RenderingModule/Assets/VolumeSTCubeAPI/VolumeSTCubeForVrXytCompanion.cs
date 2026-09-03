@@ -150,6 +150,28 @@ namespace UnityVolumeRendering
         private Vector2 spotlightDragOffset;
         private int lastControlFrame = -1;
         private float lastControlTime = -10.0f;
+        private bool desktopPoseOverride;
+        private Vector3 desktopOverridePosition;
+        private Vector3 desktopOverrideScale = Vector3.one;
+
+        public Transform DesktopFieldTransform =>
+            fieldRoot != null ? fieldRoot.transform : null;
+
+        public void SetDesktopFieldPose(Vector3 position, Vector3 scale)
+        {
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                return;
+            desktopPoseOverride = true;
+            desktopOverridePosition = position;
+            desktopOverrideScale = scale;
+            SyncIndependentFieldPose();
+        }
+
+        public void ClearDesktopFieldPose()
+        {
+            desktopPoseOverride = false;
+            SyncIndependentFieldPose();
+        }
 
         public void Initialize(VolumeSTCubeSliceDataset dataset,
             Action<int> onTimeSelected)
@@ -522,6 +544,14 @@ namespace UnityVolumeRendering
         {
             if (fieldRoot == null)
                 return;
+            if (desktopPoseOverride &&
+                VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                fieldRoot.transform.position = desktopOverridePosition;
+                fieldRoot.transform.rotation = transform.rotation;
+                fieldRoot.transform.localScale = desktopOverrideScale;
+                return;
+            }
             fieldRoot.transform.position = transform.position +
                 transform.right * VolumeSTCubeForVrFieldSwapLayout.ActiveSeparation;
             fieldRoot.transform.rotation = transform.rotation;

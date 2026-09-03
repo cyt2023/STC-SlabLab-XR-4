@@ -112,6 +112,8 @@ namespace UnityVolumeRendering
 
         public bool IsPlaying => playing;
 
+        public VolumeSTCubeForVrXytCompanion XytCompanion => xytCompanion;
+
         public string PlaybackButtonLabel => playing ? "PAUSE" : "PLAY";
 
         public string PlaybackSpeedLabel =>

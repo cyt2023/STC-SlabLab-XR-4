@@ -33,6 +33,15 @@ namespace UnityVolumeRendering
         private enum DraftOperation { None, Pivot, Drill, RollUp }
         private enum GroundMode { Aggregate, Playback }
         private enum AnalysisTaskMode { Distribution, Anomaly, Compare, Relationship }
+        private enum DesktopFocusView
+        {
+            None,
+            TimeSurface,
+            TimeStc,
+            SlabAxis,
+            SlabSurface,
+            SlabStc
+        }
 
         private sealed class AnalysisNodeState
         {
@@ -314,6 +323,14 @@ namespace UnityVolumeRendering
         private Vector3 desktopBoundaryFieldPosition;
         private Vector3 desktopOverviewFieldPosition;
         private Vector3 desktopFieldScale = Vector3.one;
+        private DesktopFocusView desktopFocusView;
+        private Coroutine desktopFocusAnimation;
+        private Transform desktopAxisParent;
+        private Vector3 desktopAxisOriginalLocalPosition;
+        private Quaternion desktopAxisOriginalLocalRotation;
+        private Vector3 desktopAxisOriginalLocalScale = Vector3.one;
+        private Vector3 desktopAxisBaseScale = Vector3.one;
+        private bool desktopFocusTargetsReady;
         private VolumeRenderedObject groundAggregateVolume;
         private VolumeDataset groundAggregateDataset;
         private Texture2D slabTexture;
@@ -1004,6 +1021,7 @@ namespace UnityVolumeRendering
             // so a chosen variable remains visibly purple on Quest.
             ReassertVariablePaletteSelectionVisuals();
             UpdatePanelTypography();
+            UpdateDesktopFocusPresentation();
         }
 
         private void UpdatePanelTypography()
@@ -9463,6 +9481,319 @@ namespace UnityVolumeRendering
                 swapLayout.KeepCurrentShiftedPosition();
         }
 
+        private void UpdateDesktopFocusPresentation()
+        {
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ||
+                spatialRoot == null || xrCamera == null)
+                return;
+            VolumeSTCubeForVrXytCompanion companion =
+                forVrSurfacePlayer != null
+                    ? forVrSurfacePlayer.XytCompanion : null;
+            if (companion == null || companion.DesktopFieldTransform == null)
+                return;
+
+            EnsureDesktopFocusTargets(companion);
+            bool timeSelection = stage == Stage.Field && boundaryEditActive;
+            bool slabLayout = stage == Stage.Slab && mainWorkspaceEntered;
+            if (timeSelection)
+            {
+                if (desktopFocusView != DesktopFocusView.TimeSurface &&
+                    desktopFocusView != DesktopFocusView.TimeStc)
+                    SetDesktopFocusView(DesktopFocusView.TimeStc, false);
+            }
+            else if (slabLayout)
+            {
+                if (desktopFocusView != DesktopFocusView.SlabAxis &&
+                    desktopFocusView != DesktopFocusView.SlabSurface &&
+                    desktopFocusView != DesktopFocusView.SlabStc)
+                    SetDesktopFocusView(DesktopFocusView.SlabAxis, false);
+            }
+            else if (desktopFocusView != DesktopFocusView.None)
+            {
+                RestoreDesktopFocusPresentation(companion);
+                return;
+            }
+
+            if (desktopFocusAnimation == null &&
+                desktopFocusView != DesktopFocusView.None)
+                ApplyDesktopFocusPose(companion, desktopFocusView);
+        }
+
+        private void EnsureDesktopFocusTargets(
+            VolumeSTCubeForVrXytCompanion companion)
+        {
+            if (desktopFocusTargetsReady)
+                return;
+            desktopFocusTargetsReady = true;
+
+            AddDesktopFocusTarget(spatialRoot.transform,
+                "Desktop Surface Field Focus", FocusDesktopSurfaceField,
+                new Vector3(1.72f, 1.62f, 0.035f));
+            AddDesktopFocusTarget(companion.DesktopFieldTransform,
+                "Desktop STC Field Focus", FocusDesktopStcField,
+                new Vector3(1.72f, 1.62f, 0.035f));
+
+            if (spatialAxisComposerRoot != null)
+            {
+                desktopAxisParent = spatialAxisComposerRoot.transform.parent;
+                desktopAxisOriginalLocalPosition =
+                    spatialAxisComposerRoot.transform.localPosition;
+                desktopAxisOriginalLocalRotation =
+                    spatialAxisComposerRoot.transform.localRotation;
+                desktopAxisOriginalLocalScale =
+                    spatialAxisComposerRoot.transform.localScale;
+                spatialAxisComposerRoot.transform.SetParent(transform, true);
+                desktopAxisBaseScale = spatialAxisComposerRoot.transform.localScale;
+                AddDesktopFocusTarget(spatialAxisComposerRoot.transform,
+                    "Desktop Axis Focus", FocusDesktopAxis,
+                    new Vector3(2.15f, 1.65f, 0.035f));
+            }
+        }
+
+        private void AddDesktopFocusTarget(Transform owner, string name,
+            Action action, Vector3 size)
+        {
+            if (owner == null || owner.Find(name) != null)
+                return;
+            // Child meshes may already own colliders. A target on the Field
+            // root lets the desktop ray resolve those hits to the same focus
+            // action, while a button's nearer target still keeps precedence.
+            VolumeSTCubeQuestClickTarget ownerTarget =
+                owner.GetComponent<VolumeSTCubeQuestClickTarget>();
+            if (ownerTarget == null)
+                ownerTarget = owner.gameObject.AddComponent<
+                    VolumeSTCubeQuestClickTarget>();
+            ownerTarget.AllowDesktopMouseDown = true;
+            ownerTarget.Clicked = action;
+            GameObject targetObject = new GameObject(name);
+            targetObject.layer = 5;
+            targetObject.transform.SetParent(owner, false);
+            float cameraSide = owner.InverseTransformPoint(
+                xrCamera.transform.position).z >= 0.0f ? 1.0f : -1.0f;
+            // The catch surface sits behind the visualization, so existing
+            // sliders, cuts and buttons remain the first raycast targets.
+            targetObject.transform.localPosition =
+                new Vector3(0.0f, 0.0f, -cameraSide * 0.74f);
+            BoxCollider collider = targetObject.AddComponent<BoxCollider>();
+            collider.isTrigger = true;
+            collider.size = size;
+            VolumeSTCubeQuestClickTarget clickTarget =
+                targetObject.AddComponent<VolumeSTCubeQuestClickTarget>();
+            clickTarget.AllowDesktopMouseDown = true;
+            clickTarget.Clicked = action;
+        }
+
+        private void FocusDesktopSurfaceField()
+        {
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                return;
+            if (stage == Stage.Field && boundaryEditActive)
+                SetDesktopFocusView(DesktopFocusView.TimeSurface, true);
+            else if (stage == Stage.Slab)
+                SetDesktopFocusView(DesktopFocusView.SlabSurface, true);
+        }
+
+        private void FocusDesktopStcField()
+        {
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                return;
+            if (stage == Stage.Field && boundaryEditActive)
+                SetDesktopFocusView(DesktopFocusView.TimeStc, true);
+            else if (stage == Stage.Slab)
+                SetDesktopFocusView(DesktopFocusView.SlabStc, true);
+        }
+
+        private void FocusDesktopAxis()
+        {
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Slab)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+        }
+
+        private void SetDesktopFocusView(DesktopFocusView next, bool animate)
+        {
+            if (desktopFocusView == next && animate)
+                return;
+            desktopFocusView = next;
+            VolumeSTCubeForVrXytCompanion companion =
+                forVrSurfacePlayer != null
+                    ? forVrSurfacePlayer.XytCompanion : null;
+            if (companion == null || companion.DesktopFieldTransform == null)
+                return;
+            EnsureDesktopFocusTargets(companion);
+            if (desktopFocusAnimation != null)
+                StopCoroutine(desktopFocusAnimation);
+            desktopFocusAnimation = animate
+                ? StartCoroutine(AnimateDesktopFocusPose(companion, next))
+                : null;
+            if (!animate)
+                ApplyDesktopFocusPose(companion, next);
+        }
+
+        private Vector3 DesktopViewportPosition(float x, float y)
+        {
+            float distance = Vector3.Dot(
+                desktopOverviewFieldPosition - xrCamera.transform.position,
+                xrCamera.transform.forward);
+            distance = Mathf.Clamp(distance, 1.55f, 3.6f);
+            return xrCamera.ViewportToWorldPoint(new Vector3(x, y, distance));
+        }
+
+        private void GetDesktopFocusTargets(DesktopFocusView focus,
+            out Vector3 surfacePosition, out Vector3 surfaceScale,
+            out Vector3 stcPosition, out Vector3 stcScale,
+            out Vector3 axisPosition, out Vector3 axisScale)
+        {
+            bool timeSurface = focus == DesktopFocusView.TimeSurface;
+            bool slab = focus == DesktopFocusView.SlabAxis ||
+                focus == DesktopFocusView.SlabSurface ||
+                focus == DesktopFocusView.SlabStc;
+            bool slabSurface = focus == DesktopFocusView.SlabSurface;
+            bool slabStc = focus == DesktopFocusView.SlabStc;
+
+            if (!slab)
+            {
+                surfacePosition = DesktopViewportPosition(
+                    timeSurface ? 0.56f : 0.18f, 0.51f);
+                surfaceScale = desktopFieldScale *
+                    (timeSurface ? 0.67f : 0.31f);
+                stcPosition = DesktopViewportPosition(
+                    timeSurface ? 0.18f : 0.58f, 0.51f);
+                stcScale = desktopFieldScale *
+                    (timeSurface ? 0.31f : 0.67f);
+                axisPosition = DesktopViewportPosition(0.84f, 0.50f);
+                axisScale = desktopAxisBaseScale * 0.42f;
+                return;
+            }
+
+            if (!slabSurface && !slabStc)
+            {
+                surfacePosition = DesktopViewportPosition(0.16f, 0.66f);
+                stcPosition = DesktopViewportPosition(0.16f, 0.30f);
+                surfaceScale = desktopFieldScale * 0.25f;
+                stcScale = desktopFieldScale * 0.25f;
+                axisPosition = DesktopViewportPosition(0.66f, 0.50f);
+                axisScale = desktopAxisBaseScale * 0.92f;
+                return;
+            }
+
+            bool surfacePrimary = slabSurface;
+            surfacePosition = DesktopViewportPosition(
+                surfacePrimary ? 0.47f : 0.14f,
+                surfacePrimary ? 0.50f : 0.68f);
+            surfaceScale = desktopFieldScale *
+                (surfacePrimary ? 0.64f : 0.24f);
+            stcPosition = DesktopViewportPosition(
+                surfacePrimary ? 0.14f : 0.47f,
+                surfacePrimary ? 0.28f : 0.50f);
+            stcScale = desktopFieldScale *
+                (surfacePrimary ? 0.24f : 0.64f);
+            axisPosition = DesktopViewportPosition(0.84f, 0.50f);
+            axisScale = desktopAxisBaseScale * 0.43f;
+        }
+
+        private void ApplyDesktopFocusPose(
+            VolumeSTCubeForVrXytCompanion companion, DesktopFocusView focus)
+        {
+            GetDesktopFocusTargets(focus,
+                out Vector3 surfacePosition, out Vector3 surfaceScale,
+                out Vector3 stcPosition, out Vector3 stcScale,
+                out Vector3 axisPosition, out Vector3 axisScale);
+            spatialRoot.transform.position = surfacePosition;
+            spatialRoot.transform.localScale = surfaceScale;
+            VolumeSTCubeForVrFieldSwapLayout swapLayout =
+                spatialRoot.GetComponent<VolumeSTCubeForVrFieldSwapLayout>();
+            if (swapLayout != null)
+                swapLayout.KeepCurrentShiftedPosition();
+            companion.SetDesktopFieldPose(stcPosition, stcScale);
+            if (spatialAxisComposerRoot != null)
+            {
+                spatialAxisComposerRoot.SetActive(
+                    focus == DesktopFocusView.SlabAxis ||
+                    focus == DesktopFocusView.SlabSurface ||
+                    focus == DesktopFocusView.SlabStc);
+                spatialAxisComposerRoot.transform.position = axisPosition;
+                spatialAxisComposerRoot.transform.localScale = axisScale;
+            }
+        }
+
+        private IEnumerator AnimateDesktopFocusPose(
+            VolumeSTCubeForVrXytCompanion companion, DesktopFocusView focus)
+        {
+            Transform stc = companion.DesktopFieldTransform;
+            Vector3 surfaceStart = spatialRoot.transform.position;
+            Vector3 surfaceScaleStart = spatialRoot.transform.localScale;
+            Vector3 stcStart = stc.position;
+            Vector3 stcScaleStart = stc.localScale;
+            Vector3 axisStart = spatialAxisComposerRoot != null
+                ? spatialAxisComposerRoot.transform.position : Vector3.zero;
+            Vector3 axisScaleStart = spatialAxisComposerRoot != null
+                ? spatialAxisComposerRoot.transform.localScale : Vector3.one;
+            GetDesktopFocusTargets(focus,
+                out Vector3 surfaceTarget, out Vector3 surfaceScaleTarget,
+                out Vector3 stcTarget, out Vector3 stcScaleTarget,
+                out Vector3 axisTarget, out Vector3 axisScaleTarget);
+            if (spatialAxisComposerRoot != null)
+                spatialAxisComposerRoot.SetActive(true);
+
+            float elapsed = 0.0f;
+            const float duration = 0.58f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float linear = Mathf.Clamp01(elapsed / duration);
+                float t = Mathf.SmoothStep(0.0f, 1.0f, linear);
+                float arc = Mathf.Sin(linear * Mathf.PI) * 0.19f;
+                spatialRoot.transform.position = Vector3.Lerp(
+                    surfaceStart, surfaceTarget, t) + xrCamera.transform.up * arc;
+                spatialRoot.transform.localScale = Vector3.Lerp(
+                    surfaceScaleStart, surfaceScaleTarget, t);
+                companion.SetDesktopFieldPose(
+                    Vector3.Lerp(stcStart, stcTarget, t) -
+                        xrCamera.transform.up * arc,
+                    Vector3.Lerp(stcScaleStart, stcScaleTarget, t));
+                if (spatialAxisComposerRoot != null)
+                {
+                    spatialAxisComposerRoot.transform.position = Vector3.Lerp(
+                        axisStart, axisTarget, t) + xrCamera.transform.up *
+                        (arc * 0.45f);
+                    spatialAxisComposerRoot.transform.localScale = Vector3.Lerp(
+                        axisScaleStart, axisScaleTarget, t);
+                }
+                VolumeSTCubeForVrFieldSwapLayout swapLayout =
+                    spatialRoot.GetComponent<VolumeSTCubeForVrFieldSwapLayout>();
+                if (swapLayout != null)
+                    swapLayout.KeepCurrentShiftedPosition();
+                yield return null;
+            }
+            desktopFocusAnimation = null;
+            ApplyDesktopFocusPose(companion, focus);
+        }
+
+        private void RestoreDesktopFocusPresentation(
+            VolumeSTCubeForVrXytCompanion companion)
+        {
+            if (desktopFocusAnimation != null)
+                StopCoroutine(desktopFocusAnimation);
+            desktopFocusAnimation = null;
+            desktopFocusView = DesktopFocusView.None;
+            spatialRoot.transform.position = desktopOverviewFieldPosition;
+            spatialRoot.transform.localScale = desktopFieldScale * 0.78f;
+            companion.ClearDesktopFieldPose();
+            if (spatialAxisComposerRoot != null && desktopAxisParent != null)
+            {
+                spatialAxisComposerRoot.transform.SetParent(desktopAxisParent,
+                    false);
+                spatialAxisComposerRoot.transform.localPosition =
+                    desktopAxisOriginalLocalPosition;
+                spatialAxisComposerRoot.transform.localRotation =
+                    desktopAxisOriginalLocalRotation;
+                spatialAxisComposerRoot.transform.localScale =
+                    desktopAxisOriginalLocalScale;
+            }
+            desktopFocusTargetsReady = false;
+        }
+
         private bool HasSavedAuthorBoundaries()
         {
             return authorBoundaryConfirmed &&
@@ -9554,7 +9885,10 @@ namespace UnityVolumeRendering
             if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
             {
                 FocusDesktopStcVisualization();
-                forVrSurfacePlayer.SetSurfaceContextVisible(false);
+                // Desktop time authoring keeps the geographic Field available
+                // as a clickable thumbnail instead of hiding it behind the STC.
+                forVrSurfacePlayer.SetSurfaceContextVisible(true);
+                SetDesktopFocusView(DesktopFocusView.TimeStc, false);
             }
             RefreshSpatialAxisControllers();
             SetStatus("Use CUT A and CUT B in the STC to define Before, During, and After. The orange panel reports the current ranges.");
@@ -14352,6 +14686,10 @@ namespace UnityVolumeRendering
             bool preservePreconfiguredBoundaries = mainWorkspaceEntered;
             if (forVrSurfacePlayer != null)
             {
+                if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                    forVrSurfacePlayer.XytCompanion != null)
+                    RestoreDesktopFocusPresentation(
+                        forVrSurfacePlayer.XytCompanion);
                 Destroy(forVrSurfacePlayer);
                 forVrSurfacePlayer = null;
             }
