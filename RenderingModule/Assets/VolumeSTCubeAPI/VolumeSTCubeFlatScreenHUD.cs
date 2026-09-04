@@ -37,6 +37,11 @@ namespace UnityVolumeRendering
         private Button backButton;
         private Button confirmButton;
         private Button axisNextButton;
+        private Button intentButton;
+        private Button fullMatrixButton;
+        private Button pivotButton;
+        private Button drillButton;
+        private Button rollUpButton;
         private GraphicRaycaster hudRaycaster;
         private readonly List<Canvas> workflowPanels = new List<Canvas>();
         private Rect lastSafeArea;
@@ -157,6 +162,17 @@ namespace UnityVolumeRendering
                 workbench.DesktopConfirmBoundary, 300.0f, ConfirmAction);
             axisNextButton = CreateButton("GENERATE SLAB", bottomRect,
                 workbench.DesktopContinueFromAxis, 260.0f, ConfirmAction);
+            intentButton = CreateButton("MATPLOT INTENT", bottomRect,
+                workbench.DesktopOpenIntent, 220.0f, HelpAction);
+            fullMatrixButton = CreateButton("FULL MATRIX", bottomRect,
+                workbench.DesktopBuildFullMatrix, 200.0f, ConfirmAction);
+            pivotButton = CreateButton("PIVOT", bottomRect,
+                workbench.DesktopBeginPivot, 140.0f, HelpAction);
+            drillButton = CreateButton("DRILL", bottomRect,
+                workbench.DesktopBeginDrill, 140.0f, PrimaryAction);
+            rollUpButton = CreateButton("ROLL-UP", bottomRect,
+                workbench.DesktopBeginRollUp, 160.0f,
+                new Color(0.10f, 0.62f, 0.34f, 1.0f));
             bottomBar.SetActive(false);
 
             helpPanel = CreatePanel("Help", safeAreaRoot,
@@ -199,6 +215,7 @@ namespace UnityVolumeRendering
         {
             if (bottomBar == null || workbench == null)
                 return;
+            EnsureWorkflowButtons();
             bool visible = workbench.DesktopCompactBarActive;
             bottomBar.SetActive(visible);
             if (!visible)
@@ -208,16 +225,32 @@ namespace UnityVolumeRendering
             // into the next step.
             bool axis = workbench.DesktopAxisBarActive;
             bool boundary = !axis && workbench.DesktopBoundaryBarActive;
+            bool workflow = !axis && !boundary &&
+                workbench.DesktopWorkflowBarActive;
             bottomStatusText.gameObject.SetActive(boundary || axis);
             bottomStatusText.text = axis
                 ? workbench.DesktopAxisBindingLabel
                 : boundary ? workbench.DesktopBoundaryRangeLabel : string.Empty;
-            primaryButton.gameObject.SetActive(!boundary && !axis);
+            primaryButton.gameObject.SetActive(!boundary && !axis && !workflow);
             playbackButton.gameObject.SetActive(boundary);
             speedButton.gameObject.SetActive(boundary);
             backButton.gameObject.SetActive(boundary);
             confirmButton.gameObject.SetActive(boundary);
             axisNextButton.gameObject.SetActive(axis);
+            intentButton.gameObject.SetActive(workflow);
+            fullMatrixButton.gameObject.SetActive(workflow);
+            pivotButton.gameObject.SetActive(workflow);
+            drillButton.gameObject.SetActive(workflow);
+            rollUpButton.gameObject.SetActive(workflow);
+            if (workflow)
+            {
+                intentButton.interactable = workbench.DesktopCanOpenIntent;
+                fullMatrixButton.interactable = workbench.DesktopCanBuildMatrix;
+                bool canTransform = workbench.DesktopCanTransformMatrix;
+                pivotButton.interactable = canTransform;
+                drillButton.interactable = canTransform;
+                rollUpButton.interactable = canTransform;
+            }
             if (axis)
             {
                 bool ready = workbench.DesktopAxisBindingsComplete;
@@ -230,6 +263,58 @@ namespace UnityVolumeRendering
             }
             SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
             SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
+        }
+
+        private void EnsureWorkflowButtons()
+        {
+            if (primaryButton == null)
+                primaryButton = FindBottomButton("SET TIME RANGE");
+            if (playbackButton == null)
+                playbackButton = FindBottomButton("PLAY");
+            if (speedButton == null)
+                speedButton = FindBottomButton("SPEED 1x");
+            if (backButton == null)
+                backButton = FindBottomButton("BACK");
+            if (confirmButton == null)
+                confirmButton = FindBottomButton("CONFIRM TIME RANGE");
+            if (axisNextButton == null)
+                axisNextButton = FindBottomButton("GENERATE SLAB");
+            if (intentButton == null)
+                intentButton = FindBottomButton("MATPLOT INTENT");
+            if (fullMatrixButton == null)
+                fullMatrixButton = FindBottomButton("FULL MATRIX");
+            if (pivotButton == null)
+                pivotButton = FindBottomButton("PIVOT");
+            if (drillButton == null)
+                drillButton = FindBottomButton("DRILL");
+            if (rollUpButton == null)
+                rollUpButton = FindBottomButton("ROLL-UP");
+            if (bottomBar == null || workbench == null)
+                return;
+            if (intentButton == null)
+                intentButton = CreateButton("MATPLOT INTENT", bottomBar.transform,
+                    workbench.DesktopOpenIntent, 220.0f, HelpAction);
+            if (fullMatrixButton == null)
+                fullMatrixButton = CreateButton("FULL MATRIX", bottomBar.transform,
+                    workbench.DesktopBuildFullMatrix, 200.0f, ConfirmAction);
+            if (pivotButton == null)
+                pivotButton = CreateButton("PIVOT", bottomBar.transform,
+                    workbench.DesktopBeginPivot, 140.0f, HelpAction);
+            if (drillButton == null)
+                drillButton = CreateButton("DRILL", bottomBar.transform,
+                    workbench.DesktopBeginDrill, 140.0f, PrimaryAction);
+            if (rollUpButton == null)
+                rollUpButton = CreateButton("ROLL-UP", bottomBar.transform,
+                    workbench.DesktopBeginRollUp, 160.0f,
+                    new Color(0.10f, 0.62f, 0.34f, 1.0f));
+        }
+
+        private Button FindBottomButton(string name)
+        {
+            if (bottomBar == null)
+                return null;
+            Transform child = bottomBar.transform.Find(name);
+            return child != null ? child.GetComponent<Button>() : null;
         }
 
         private static void SetButtonText(Button button, string value)
@@ -277,7 +362,7 @@ namespace UnityVolumeRendering
                 workbench.DesktopMatrixTaskActive;
             // Reserve fixed render-safe lanes for both bars. World-space Fields
             // and axis tools are never allowed to render underneath the HUD.
-            camera.rect = central
+            camera.rect = central && !matrix
                 ? new Rect(0.0f, 0.0f, 1.0f, 0.86f)
                 : new Rect(0.0f, 0.10f, 1.0f, 0.765f);
             float distance = 2.05f;

@@ -680,7 +680,11 @@ namespace UnityVolumeRendering
 
         public bool DesktopCompactBarActive
         {
-            get { return stage == Stage.Field || stage == Stage.Slab; }
+            get
+            {
+                return stage == Stage.Field || stage == Stage.Slab ||
+                    stage == Stage.Matrix;
+            }
         }
 
         public bool DesktopBoundaryBarActive
@@ -690,7 +694,35 @@ namespace UnityVolumeRendering
 
         public bool DesktopAxisBarActive
         {
-            get { return stage == Stage.Slab; }
+            get { return stage == Stage.Slab && !slabPreviewBuilt; }
+        }
+
+        public bool DesktopWorkflowBarActive
+        {
+            get
+            {
+                return (stage == Stage.Slab && slabPreviewBuilt) ||
+                    stage == Stage.Matrix;
+            }
+        }
+
+        public bool DesktopCanOpenIntent
+        {
+            get
+            {
+                return AreSpatialAxisBindingsComplete(out _) &&
+                    authorBoundaryConfirmed;
+            }
+        }
+
+        public bool DesktopCanBuildMatrix
+        {
+            get { return DesktopCanOpenIntent && intentConfigured && !jobRunning; }
+        }
+
+        public bool DesktopCanTransformMatrix
+        {
+            get { return s4dGridImage != null && !jobRunning; }
         }
 
         public bool DesktopAxisBindingsComplete
@@ -713,10 +745,8 @@ namespace UnityVolumeRendering
             get
             {
                 return stage == Stage.Slab &&
-                    ((slabPreviewCanvas != null &&
-                      slabPreviewCanvas.gameObject.activeSelf) ||
-                     (intentCanvas != null &&
-                      intentCanvas.gameObject.activeSelf));
+                    intentCanvas != null &&
+                    intentCanvas.gameObject.activeSelf;
             }
         }
 
@@ -798,6 +828,31 @@ namespace UnityVolumeRendering
                 ToolbarGenerateSlab();
         }
 
+        public void DesktopOpenIntent()
+        {
+            OpenIntentEditor();
+        }
+
+        public void DesktopBuildFullMatrix()
+        {
+            BeginGridPlacement();
+        }
+
+        public void DesktopBeginPivot()
+        {
+            BeginDraft(DraftOperation.Pivot);
+        }
+
+        public void DesktopBeginDrill()
+        {
+            BeginDraft(DraftOperation.Drill);
+        }
+
+        public void DesktopBeginRollUp()
+        {
+            BeginDraft(DraftOperation.RollUp);
+        }
+
         public string DesktopWorkflowTitle
         {
             get
@@ -820,10 +875,10 @@ namespace UnityVolumeRendering
             switch (stage)
             {
                 case Stage.Field: OpenDatasetImportStage(); break;
-                case Stage.Slab: Navigate(Stage.Field); break;
-                case Stage.Matrix: Navigate(Stage.Slab); break;
-                case Stage.Analyze: Navigate(Stage.Matrix); break;
-                case Stage.Result: Navigate(Stage.Analyze); break;
+                case Stage.Slab: NavigateDesktopStep(Stage.Field); break;
+                case Stage.Matrix: NavigateDesktopStep(Stage.Slab); break;
+                case Stage.Analyze: NavigateDesktopStep(Stage.Matrix); break;
+                case Stage.Result: NavigateDesktopStep(Stage.Analyze); break;
                 default: SetStatus("This is the first step."); break;
             }
         }
@@ -833,12 +888,60 @@ namespace UnityVolumeRendering
             switch (stage)
             {
                 case Stage.DatasetImport: ConfirmDatasetImport(); break;
-                case Stage.Field: Navigate(Stage.Slab); break;
-                case Stage.Slab: Navigate(Stage.Matrix); break;
-                case Stage.Matrix: Navigate(Stage.Analyze); break;
-                case Stage.Analyze: Navigate(Stage.Result); break;
+                case Stage.Field:
+                    if (!authorBoundaryConfirmed)
+                        OpenInitialAuthorBoundary();
+                    else
+                        NavigateDesktopStep(Stage.Slab);
+                    break;
+                case Stage.Slab:
+                    if (!slabPreviewBuilt)
+                        ToolbarGenerateSlab();
+                    else if (!intentConfigured)
+                        OpenIntentEditor();
+                    else
+                        BeginGridPlacement();
+                    break;
+                case Stage.Matrix:
+                    if (!gridCellSelected)
+                        SetStatus("Choose a Matrix cell before continuing.");
+                    else
+                        SelectS4DGridCell(selectedGridColumn, selectedGridRow);
+                    break;
+                case Stage.Analyze: NavigateDesktopStep(Stage.Result); break;
                 default: SetStatus("This is the final step."); break;
             }
+        }
+
+        private void NavigateDesktopStep(Stage next)
+        {
+            if (jobRunning)
+            {
+                SetStatus("Wait for the current MatPlot job to finish.");
+                return;
+            }
+            if (boundaryCanvas != null)
+                boundaryCanvas.gameObject.SetActive(false);
+            if (slabPreviewCanvas != null)
+                slabPreviewCanvas.gameObject.SetActive(false);
+            if (intentCanvas != null)
+                intentCanvas.gameObject.SetActive(false);
+            if (draftCanvas != null)
+                draftCanvas.gameObject.SetActive(false);
+            if (facetGridCanvas != null)
+                facetGridCanvas.gameObject.SetActive(false);
+            if (aiFindingsCanvas != null)
+                aiFindingsCanvas.gameObject.SetActive(false);
+            boundaryEditActive = false;
+            initialBoundarySetupActive = false;
+            SetTimeBoundaryHandleVisibility(false);
+            SetDepthBoundaryVisibility(false);
+            if (next != Stage.Analyze && next != Stage.Result)
+                SetGroundDock(false);
+            stage = next;
+            ShowPrimaryTool(panelCanvas);
+            BuildStage();
+            VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
         }
 
         public void Initialize(Camera camera, VolumeSTCubeQuestRayInteractor interactor,
@@ -1222,8 +1325,20 @@ namespace UnityVolumeRendering
             ShowPrimaryTool(panelCanvas);
             if (slabPreviewBuilt && slabPreviewCanvas != null)
             {
-                ShowComposerTool(slabPreviewCanvas);
                 BuildSlabPreviewPanel();
+                if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                {
+                    // The desktop Slab is the large axis work area. Keep the
+                    // two Fields beside it as clickable previews instead of
+                    // covering all three with the VR preview card.
+                    slabPreviewCanvas.gameObject.SetActive(false);
+                    ShowPrimaryTool(panelCanvas);
+                    SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+                }
+                else
+                {
+                    ShowComposerTool(slabPreviewCanvas);
+                }
             }
             if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
                 leftController != null)
@@ -9854,10 +9969,10 @@ namespace UnityVolumeRendering
             {
                 surfacePosition = DesktopViewportPosition(0.19f, 0.67f);
                 stcPosition = DesktopViewportPosition(0.19f, 0.29f);
-                surfaceScale = desktopFieldScale * 0.40f;
-                stcScale = desktopFieldScale * 0.40f;
+                surfaceScale = desktopFieldScale * 0.50f;
+                stcScale = desktopFieldScale * 0.50f;
                 axisPosition = DesktopViewportPosition(0.68f, 0.50f);
-                axisScale = desktopAxisBaseScale * 1.48f;
+                axisScale = desktopAxisBaseScale * 1.38f;
                 return;
             }
 
@@ -9866,14 +9981,14 @@ namespace UnityVolumeRendering
                 surfacePrimary ? 0.47f : 0.14f,
                 surfacePrimary ? 0.50f : 0.68f);
             surfaceScale = desktopFieldScale *
-                (surfacePrimary ? 0.86f : 0.34f);
+                (surfacePrimary ? 1.02f : 0.40f);
             stcPosition = DesktopViewportPosition(
                 surfacePrimary ? 0.14f : 0.47f,
                 surfacePrimary ? 0.28f : 0.50f);
             stcScale = desktopFieldScale *
-                (surfacePrimary ? 0.34f : 0.86f);
+                (surfacePrimary ? 0.40f : 1.02f);
             axisPosition = DesktopViewportPosition(0.84f, 0.50f);
-            axisScale = desktopAxisBaseScale * 0.72f;
+            axisScale = desktopAxisBaseScale * 0.76f;
         }
 
         private void ApplyDesktopFocusPose(
@@ -10315,10 +10430,9 @@ namespace UnityVolumeRendering
 
         private void BuildMatrixStage()
         {
-            CreateText(panelContent,
-                "FACET GRID  /  " + FacetAxisSummary().ToUpperInvariant(),
-                27, FontStyle.Bold,
-                new Vector2(0, 206), new Vector2(1030, 38), TextAnchor.MiddleLeft, Ink);
+            CreateText(panelContent, "MATRIX", 27, FontStyle.Bold,
+                new Vector2(-430, 206), new Vector2(160, 38),
+                TextAnchor.MiddleLeft, Ink);
 
             if (!placementConfirmed && s4dGridImage == null)
             {
@@ -10341,8 +10455,6 @@ namespace UnityVolumeRendering
                     new Vector2(360, 52), Amber, ConfirmGridPlacement);
                 return;
             }
-
-            CreateTransformSummary();
 
             if (jobRunning && s4dGridImage == null)
             {
@@ -10399,28 +10511,58 @@ namespace UnityVolumeRendering
 
             if (gridStale)
             {
-                CreatePanelCard(panelContent, new Vector2(0, 108), new Vector2(1010, 38), Amber);
+                CreatePanelCard(panelContent, new Vector2(0, 155), new Vector2(1010, 38), Amber);
                 CreateText(panelContent,
                     "STALE  /  Boundary changed since this snapshot was generated",
-                    15, FontStyle.Bold, new Vector2(-90, 108), new Vector2(790, 26),
+                    15, FontStyle.Bold, new Vector2(-90, 155), new Vector2(790, 26),
                     TextAnchor.MiddleLeft, Amber);
-                CreateButton(panelContent, "Re-materialize", new Vector2(400, 108),
+                CreateButton(panelContent, "Re-materialize", new Vector2(400, 155),
                     new Vector2(195, 32), Amber, RematerializeS4DGrid);
             }
 
-            // Every Matrix result is a real UI panel, not one atlas-shaped button.
-            // Each cell owns its cropped chart, border, label and click target.
+            // Size the Matrix from the actual MatPlot atlas. This preserves the
+            // source chart proportions on wide, square and portrait outputs.
+            Vector2 matrixSize = DesktopMatrixGridSize(s4dGridImage,
+                new Vector2(1010.0f, gridStale ? 520.0f : 600.0f));
             CreateMaterializedFacetCells(panelContent, s4dGridImage,
-                new Vector2(-112, -55), new Vector2(760, 332));
-            BuildDigestCard();
-            if (jobRunning)
-                CreateText(panelContent, "UPDATING - old snapshot remains visible",
-                    15, FontStyle.Bold, new Vector2(-112, -226), new Vector2(700, 28),
-                    TextAnchor.MiddleCenter, Amber);
-            else
-                CreateText(panelContent, "Point to a cell to inspect its generation footprint.",
-                    14, FontStyle.Bold, new Vector2(-112, -226), new Vector2(700, 28),
-                    TextAnchor.MiddleCenter, Cyan);
+                new Vector2(0, gridStale ? -55 : -65), matrixSize);
+            CreateButton(panelContent,
+                digestRunning ? "FINDINGS ..." : "FINDINGS",
+                new Vector2(430, 206), new Vector2(190, 46), Green,
+                OpenAiFindingsPanel);
+        }
+
+        private Vector2 DesktopMatrixGridSize(Texture texture, Vector2 maximum)
+        {
+            int columns = Mathf.Clamp(activeGridColumns, 1,
+                MaxFacetAxisBuckets);
+            int rows = Mathf.Clamp(activeGridRows, 1,
+                MaxFacetAxisBuckets);
+            int sourceColumns = Mathf.Max(1,
+                activeTimeBuckets != null ? activeTimeBuckets.Length : columns);
+            int sourceRows = Mathf.Max(1,
+                activeDepthBuckets != null ? activeDepthBuckets.Length : rows);
+            float plotAspect = 1.35f;
+            if (texture != null && texture.height > 0)
+            {
+                plotAspect = (texture.width / (float)sourceColumns) /
+                    (texture.height / (float)sourceRows);
+            }
+            plotAspect = Mathf.Clamp(plotAspect, 0.45f, 4.5f);
+            float width = maximum.x;
+            float cellWidth = width / columns;
+            float cellHeight = cellWidth / plotAspect + 62.0f;
+            float height = cellHeight * rows;
+            if (height > maximum.y)
+            {
+                height = maximum.y;
+                cellHeight = height / rows;
+                width = Mathf.Min(maximum.x,
+                    columns * Mathf.Max(90.0f,
+                        (cellHeight - 62.0f) * plotAspect));
+            }
+            return new Vector2(Mathf.Max(320.0f, width),
+                Mathf.Max(150.0f, height));
         }
 
         private void SelectS4DGridCell(int column, int row)
@@ -10727,6 +10869,13 @@ namespace UnityVolumeRendering
         {
             if (aiFindingsCanvas != null)
                 aiFindingsCanvas.gameObject.SetActive(false);
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Matrix && panelCanvas != null)
+            {
+                ShowPrimaryTool(panelCanvas);
+                BuildStage();
+                return;
+            }
             if (facetGridCanvas != null)
             {
                 HidePrimaryToolsExcept(facetGridCanvas);
@@ -12470,15 +12619,25 @@ namespace UnityVolumeRendering
                             : null;
                     if (texture != null || streamedTexture != null)
                     {
+                        GameObject viewportObject = new GameObject(
+                            "Cell chart viewport", typeof(RectTransform));
+                        viewportObject.transform.SetParent(cell, false);
+                        RectTransform viewportRect =
+                            viewportObject.GetComponent<RectTransform>();
+                        viewportRect.sizeDelta = new Vector2(
+                            Mathf.Max(28, cellWidth - 20),
+                            Mathf.Max(24, cellHeight - 62));
+                        viewportRect.anchoredPosition = Vector2.zero;
+
                         GameObject imageObject = new GameObject(
                             "Cell chart", typeof(RectTransform));
-                        imageObject.transform.SetParent(cell, false);
+                        imageObject.transform.SetParent(viewportRect, false);
                         RectTransform imageRect =
                             imageObject.GetComponent<RectTransform>();
-                        imageRect.sizeDelta = new Vector2(
-                            Mathf.Max(28, cellWidth - 20),
-                            Mathf.Max(24, cellHeight - 55));
-                        imageRect.anchoredPosition = new Vector2(0, 3);
+                        imageRect.anchorMin = Vector2.zero;
+                        imageRect.anchorMax = Vector2.one;
+                        imageRect.offsetMin = Vector2.zero;
+                        imageRect.offsetMax = Vector2.zero;
                         RawImage image = imageObject.AddComponent<RawImage>();
                         image.texture = texture != null ? texture : streamedTexture;
                         image.color = Color.white;
@@ -12500,6 +12659,26 @@ namespace UnityVolumeRendering
                                     (float)sourceRows,
                                 1.0f / sourceColumns,
                                 1.0f / sourceRows);
+                            AspectRatioFitter fitter =
+                                imageObject.AddComponent<AspectRatioFitter>();
+                            fitter.aspectMode =
+                                AspectRatioFitter.AspectMode.FitInParent;
+                            fitter.aspectRatio = Mathf.Clamp(
+                                (texture.width / (float)sourceColumns) /
+                                (texture.height / (float)sourceRows),
+                                0.1f, 10.0f);
+                        }
+                        else if (streamedTexture != null &&
+                            streamedTexture.height > 0)
+                        {
+                            AspectRatioFitter fitter =
+                                imageObject.AddComponent<AspectRatioFitter>();
+                            fitter.aspectMode =
+                                AspectRatioFitter.AspectMode.FitInParent;
+                            fitter.aspectRatio = Mathf.Clamp(
+                                streamedTexture.width /
+                                    (float)streamedTexture.height,
+                                0.1f, 10.0f);
                         }
                     }
                     else
