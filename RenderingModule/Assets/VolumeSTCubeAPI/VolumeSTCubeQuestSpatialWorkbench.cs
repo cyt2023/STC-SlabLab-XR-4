@@ -11022,10 +11022,22 @@ namespace UnityVolumeRendering
             if (aiFindingsCanvas != null)
                 aiFindingsCanvas.gameObject.SetActive(false);
             if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
-                stage == Stage.Matrix && panelCanvas != null)
+                stage == Stage.Matrix)
             {
-                ShowPrimaryTool(panelCanvas);
-                BuildStage();
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+                if (s4dGridImage != null && facetGridCanvas != null)
+                {
+                    HidePrimaryToolsExcept(facetGridCanvas);
+                    facetGridCanvas.gameObject.SetActive(true);
+                    BuildFacetGridPanel();
+                }
+                else if (panelCanvas != null)
+                {
+                    ShowPrimaryTool(panelCanvas);
+                    BuildStage();
+                }
+                VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
+                SetStatus("Findings closed. Returned to the Full Matrix.");
                 return;
             }
             if (facetGridCanvas != null)
