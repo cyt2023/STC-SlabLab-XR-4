@@ -680,6 +680,15 @@ namespace UnityVolumeRendering
             get { return stage == Stage.Matrix; }
         }
 
+        public bool DesktopMatrixPanelPrimary
+        {
+            get
+            {
+                return stage == Stage.Matrix &&
+                    desktopFocusView == DesktopFocusView.SlabAxis;
+            }
+        }
+
         public bool DesktopCompactBarActive
         {
             get
@@ -884,6 +893,11 @@ namespace UnityVolumeRendering
 
         public void DesktopBuildFullMatrix()
         {
+            if (stage == Stage.Matrix && s4dGridImage != null)
+            {
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+                return;
+            }
             BeginGridPlacement();
         }
 
@@ -9812,6 +9826,8 @@ namespace UnityVolumeRendering
                 // Also repair an in-progress session after a script reload.
                 // The transition hook below handles new jobs; this guard
                 // cleans stale Step 3 composer panels already left on screen.
+                if (!desktopMatrixPresentationReady)
+                    SetDesktopFocusView(DesktopFocusView.SlabAxis, false);
                 ShowPrimaryTool(panelCanvas);
                 RestoreSelectedDatasetForMatrix();
                 desktopMatrixPresentationReady = true;
@@ -9829,7 +9845,7 @@ namespace UnityVolumeRendering
             // Step 3 owns this presentation regardless of which confirmation
             // path entered it. Tying it to mainWorkspaceEntered left the axis
             // area empty after some valid time-range transitions.
-            bool slabLayout = stage == Stage.Slab;
+            bool slabLayout = stage == Stage.Slab || stage == Stage.Matrix;
             bool composerPanel = DesktopComposerPanelActive;
             if (slabLayout)
             {
@@ -9943,7 +9959,7 @@ namespace UnityVolumeRendering
                 return;
             if (stage == Stage.Field && boundaryEditActive)
                 SetDesktopFocusView(DesktopFocusView.TimeSurface, true);
-            else if (stage == Stage.Slab)
+            else if (stage == Stage.Slab || stage == Stage.Matrix)
                 SetDesktopFocusView(DesktopFocusView.SlabSurface, true);
         }
 
@@ -9953,7 +9969,7 @@ namespace UnityVolumeRendering
                 return;
             if (stage == Stage.Field && boundaryEditActive)
                 SetDesktopFocusView(DesktopFocusView.TimeStc, true);
-            else if (stage == Stage.Slab)
+            else if (stage == Stage.Slab || stage == Stage.Matrix)
                 SetDesktopFocusView(DesktopFocusView.SlabStc, true);
         }
 
@@ -10063,7 +10079,7 @@ namespace UnityVolumeRendering
             if (spatialAxisComposerRoot != null)
             {
                 spatialAxisComposerRoot.SetActive(
-                    !DesktopComposerPanelActive &&
+                    stage == Stage.Slab && !DesktopComposerPanelActive &&
                     (focus == DesktopFocusView.SlabAxis ||
                      focus == DesktopFocusView.SlabSurface ||
                      focus == DesktopFocusView.SlabStc));
@@ -10093,7 +10109,8 @@ namespace UnityVolumeRendering
                 focus == DesktopFocusView.SlabStc;
             if (spatialAxisComposerRoot != null)
                 spatialAxisComposerRoot.SetActive(
-                    slabFocus && !DesktopComposerPanelActive);
+                    stage == Stage.Slab && slabFocus &&
+                    !DesktopComposerPanelActive);
 
             float elapsed = 0.0f;
             const float duration = 0.58f;

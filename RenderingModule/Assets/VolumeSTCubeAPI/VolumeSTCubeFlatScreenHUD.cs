@@ -398,6 +398,11 @@ namespace UnityVolumeRendering
                 bool desktopImportedPanel =
                     panel.name == "S4D Anchored Facet Grid" ||
                     panel.name == "AI Findings";
+                bool desktopMatrixPanel = workbench != null &&
+                    workbench.DesktopMatrixTaskActive &&
+                    panel.name == "S4D Anchored Facet Grid";
+                bool matrixPrimary = desktopMatrixPanel &&
+                    workbench.DesktopMatrixPanelPrimary;
                 bool desktopTaskSurface = desktopComposer ||
                     desktopImportedPanel;
                 if (workbench != null && workbench.DesktopCompactBarActive &&
@@ -413,17 +418,24 @@ namespace UnityVolumeRendering
                 float panelHorizontalWorld = desktopComposer
                     ? viewHeight * camera.aspect *
                         (intentPrimary ? 0.48f : 0.25f)
-                    : horizontalWorld;
+                    : desktopMatrixPanel
+                        ? viewHeight * camera.aspect *
+                            (matrixPrimary ? 0.66f : 0.27f)
+                        : horizontalWorld;
                 float panelVerticalWorld = desktopComposer
                     ? viewHeight * (intentPrimary ? 0.68f : 0.38f)
-                    : verticalWorld;
+                    : desktopMatrixPanel
+                        ? viewHeight * (matrixPrimary ? 0.76f : 0.40f)
+                        : verticalWorld;
                 float scale = Mathf.Min(
                     panelHorizontalWorld / Mathf.Max(1.0f, rect.sizeDelta.x),
                     panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
                     new Vector3(desktopComposer
                             ? intentPrimary ? 0.70f : 0.84f
-                            : 0.5f,
+                            : desktopMatrixPanel
+                                ? matrixPrimary ? 0.66f : 0.84f
+                                : 0.5f,
                         desktopTaskSurface ? 0.50f :
                             central ? 0.48f : 0.075f,
                         distance));
