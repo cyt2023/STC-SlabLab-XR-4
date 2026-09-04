@@ -36,7 +36,6 @@ namespace UnityVolumeRendering
         private Button speedButton;
         private Button backButton;
         private Button confirmButton;
-        private Button axisNextButton;
         private Button intentButton;
         private Button fullMatrixButton;
         private Button pivotButton;
@@ -160,8 +159,6 @@ namespace UnityVolumeRendering
                 workbench.DesktopCancelBoundary, 150.0f, BackAction);
             confirmButton = CreateButton("CONFIRM TIME RANGE", bottomRect,
                 workbench.DesktopConfirmBoundary, 300.0f, ConfirmAction);
-            axisNextButton = CreateButton("GENERATE SLAB", bottomRect,
-                workbench.DesktopContinueFromAxis, 260.0f, ConfirmAction);
             intentButton = CreateButton("MATPLOT INTENT", bottomRect,
                 workbench.DesktopOpenIntent, 220.0f, HelpAction);
             fullMatrixButton = CreateButton("FULL MATRIX", bottomRect,
@@ -197,7 +194,11 @@ namespace UnityVolumeRendering
         private void Update()
         {
             if (titleText != null && workbench != null)
-                titleText.text = workbench.DesktopWorkflowTitle;
+            {
+                string title = workbench.DesktopWorkflowTitle;
+                if (titleText.text != title)
+                    titleText.text = title;
+            }
             RefreshBottomBar();
             if (Input.GetKeyDown(KeyCode.H) || Input.GetKeyDown(KeyCode.F1))
                 ToggleHelp();
@@ -228,15 +229,16 @@ namespace UnityVolumeRendering
             bool workflow = !axis && !boundary &&
                 workbench.DesktopWorkflowBarActive;
             bottomStatusText.gameObject.SetActive(boundary || axis);
-            bottomStatusText.text = axis
+            string status = axis
                 ? workbench.DesktopAxisBindingLabel
                 : boundary ? workbench.DesktopBoundaryRangeLabel : string.Empty;
+            if (bottomStatusText.text != status)
+                bottomStatusText.text = status;
             primaryButton.gameObject.SetActive(!boundary && !axis && !workflow);
             playbackButton.gameObject.SetActive(boundary);
             speedButton.gameObject.SetActive(boundary);
             backButton.gameObject.SetActive(boundary);
             confirmButton.gameObject.SetActive(boundary);
-            axisNextButton.gameObject.SetActive(axis);
             intentButton.gameObject.SetActive(workflow);
             fullMatrixButton.gameObject.SetActive(workflow);
             pivotButton.gameObject.SetActive(workflow);
@@ -244,10 +246,8 @@ namespace UnityVolumeRendering
             rollUpButton.gameObject.SetActive(workflow);
             if (workflow)
             {
-                axisNextButton.gameObject.SetActive(true);
-                SetButtonText(axisNextButton, "GENERATE SLAB");
-                SetWorkflowButtonState(axisNextButton,
-                    workbench.DesktopCanGenerateSlab, ConfirmAction);
+                // Desktop moves directly from axis binding to MatPlot Intent.
+                // Slab preparation happens internally and has no separate UI.
                 SetWorkflowButtonState(intentButton,
                     workbench.DesktopCanOpenIntent, HelpAction);
                 SetWorkflowButtonState(fullMatrixButton,
@@ -260,16 +260,6 @@ namespace UnityVolumeRendering
                     PrimaryAction);
                 SetWorkflowButtonState(rollUpButton, canTransform,
                     new Color(0.10f, 0.62f, 0.34f, 1.0f));
-            }
-            if (axis)
-            {
-                bool ready = workbench.DesktopAxisBindingsComplete;
-                axisNextButton.interactable = ready;
-                SetButtonText(axisNextButton,
-                    workbench.DesktopSlabActionLabel);
-                Image image = axisNextButton.GetComponent<Image>();
-                if (image != null)
-                    image.color = ready ? ConfirmAction : UtilityAction;
             }
             SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
             SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
@@ -298,8 +288,6 @@ namespace UnityVolumeRendering
                 backButton = FindBottomButton("BACK");
             if (confirmButton == null)
                 confirmButton = FindBottomButton("CONFIRM TIME RANGE");
-            if (axisNextButton == null)
-                axisNextButton = FindBottomButton("GENERATE SLAB");
             if (intentButton == null)
                 intentButton = FindBottomButton("MATPLOT INTENT");
             if (fullMatrixButton == null)
@@ -343,7 +331,7 @@ namespace UnityVolumeRendering
             if (button == null)
                 return;
             Text label = button.GetComponentInChildren<Text>();
-            if (label != null)
+            if (label != null && label.text != value)
                 label.text = value;
         }
 

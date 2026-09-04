@@ -568,12 +568,14 @@ namespace UnityVolumeRendering
         private float progress;
         private float displayedGridProgress;
         private float targetGridProgress;
-        private int lastStageProgressBucket = -1;
         private Coroutine gridProgressAnimation;
         private Text facetGridProgressText;
         private Text facetGridProgressStageText;
         private Text facetGridValidatedText;
         private Image facetGridProgressFill;
+        private Text desktopMatrixProgressText;
+        private Text desktopMatrixProgressStageText;
+        private Image desktopMatrixProgressFill;
         private readonly RawImage[] facetGridCellImages = new RawImage[MaxFacetCells];
         private readonly Text[] facetGridCellStateLabels = new Text[MaxFacetCells];
         private readonly GameObject[] facetGridCellPlaceholders = new GameObject[MaxFacetCells];
@@ -718,7 +720,7 @@ namespace UnityVolumeRendering
         {
             get
             {
-                return slabPreviewBuilt && !intentConfigured &&
+                return !intentConfigured && !jobRunning &&
                     AreSpatialAxisBindingsComplete(out _) &&
                     authorBoundaryConfirmed;
             }
@@ -857,6 +859,17 @@ namespace UnityVolumeRendering
 
         public void DesktopOpenIntent()
         {
+            // On desktop the Slab skeleton is an implementation detail. The
+            // user moves directly from axis binding to Intent; prepare the
+            // skeleton silently so there is no redundant Generate Slab step.
+            if (!slabPreviewBuilt)
+            {
+                ToolbarGenerateSlab();
+                if (!slabPreviewBuilt)
+                    return;
+                if (slabPreviewCanvas != null)
+                    slabPreviewCanvas.gameObject.SetActive(false);
+            }
             OpenIntentEditor();
         }
 
@@ -922,10 +935,8 @@ namespace UnityVolumeRendering
                         NavigateDesktopStep(Stage.Slab);
                     break;
                 case Stage.Slab:
-                    if (!slabPreviewBuilt)
-                        ToolbarGenerateSlab();
-                    else if (!intentConfigured)
-                        OpenIntentEditor();
+                    if (!intentConfigured)
+                        DesktopOpenIntent();
                     else
                         BeginGridPlacement();
                     break;
@@ -10504,47 +10515,15 @@ namespace UnityVolumeRendering
             if ((jobRunning || resumeMaterializationAfterManifest) &&
                 s4dGridImage == null)
             {
-                CreateText(panelContent,
+                desktopMatrixProgressStageText = CreateText(panelContent,
                     resumeMaterializationAfterManifest
                         ? "Preparing dataset for MatPlot"
                         : "Materializing immutable snapshot",
-                    21, FontStyle.Bold, new Vector2(0, 70), new Vector2(920, 34),
+                    23, FontStyle.Bold, new Vector2(0, 82), new Vector2(920, 40),
                     TextAnchor.MiddleCenter, Ink);
-                int progressColumns = Mathf.Clamp(activeGridColumns, 1,
-                    MaxFacetAxisBuckets);
-                int progressRows = Mathf.Clamp(activeGridRows, 1,
-                    MaxFacetAxisBuckets);
-                CreateWireGrid(panelContent, new Vector2(0, -52), new Vector2(720, 220),
-                    progressColumns, progressRows, Muted);
-                for (int row = 0; row < progressRows; row++)
-                    for (int column = 0; column < progressColumns; column++)
-                    {
-                        int cellNumber = column + row * progressColumns;
-                        int cellCount = progressColumns * progressRows;
-                        CreateText(panelContent,
-                            (cellNumber + 1) / (float)cellCount <= progress
-                                ? "READY" : "COMPUTING",
-                            Mathf.Clamp(18 - progressColumns, 9, 12),
-                            FontStyle.Bold,
-                            new Vector2(
-                                progressColumns == 1 ? 0 :
-                                    -310 + column * (620.0f / (progressColumns - 1)),
-                                progressRows == 1 ? -52 :
-                                    16 - row * (146.0f / (progressRows - 1))),
-                            new Vector2(680.0f / progressColumns, 20),
-                            TextAnchor.MiddleCenter,
-                            (cellNumber + 1) / (float)cellCount <= progress
-                                ? Green : Amber);
-                    }
-                CreateText(panelContent,
-                    resumeMaterializationAfterManifest
-                        ? "VALIDATING DATASET METADATA..."
-                        : Mathf.RoundToInt(progress * 100) + "%  /  " +
-                            MaterializationStageLabel(), 17, FontStyle.Bold,
-                    new Vector2(0, -185), new Vector2(700, 30),
-                    TextAnchor.MiddleCenter, Amber);
+                CreateDesktopMatrixProgressBar(panelContent);
                 if (!resumeMaterializationAfterManifest)
-                    CreateButton(panelContent, "Cancel Job", new Vector2(0, -225),
+                    CreateButton(panelContent, "CANCEL", new Vector2(0, -155),
                         new Vector2(250, 42), Card, CancelS4DGridJob);
                 return;
             }
@@ -10582,6 +10561,65 @@ namespace UnityVolumeRendering
                 digestRunning ? "FINDINGS ..." : "FINDINGS",
                 new Vector2(430, 206), new Vector2(190, 46), Green,
                 OpenAiFindingsPanel);
+        }
+
+        private void CreateDesktopMatrixProgressBar(RectTransform parent)
+        {
+            float shownProgress = resumeMaterializationAfterManifest
+                ? Mathf.Max(0.04f, displayedGridProgress)
+                : displayedGridProgress;
+
+            GameObject trackObject = new GameObject("Matrix progress track",
+                typeof(RectTransform));
+            trackObject.transform.SetParent(parent, false);
+            RectTransform track = trackObject.GetComponent<RectTransform>();
+            track.sizeDelta = new Vector2(760.0f, 46.0f);
+            track.anchoredPosition = new Vector2(0.0f, 5.0f);
+            Image trackImage = trackObject.AddComponent<Image>();
+            trackImage.sprite = RoundedUiSprite();
+            trackImage.type = Image.Type.Sliced;
+            trackImage.color = new Color(0.01f, 0.025f, 0.04f, 1.0f);
+            trackImage.raycastTarget = false;
+
+            GameObject fillObject = new GameObject("Matrix progress fill",
+                typeof(RectTransform));
+            fillObject.transform.SetParent(track, false);
+            RectTransform fill = fillObject.GetComponent<RectTransform>();
+            fill.anchorMin = Vector2.zero;
+            fill.anchorMax = Vector2.one;
+            fill.offsetMin = new Vector2(5.0f, 5.0f);
+            fill.offsetMax = new Vector2(-5.0f, -5.0f);
+            desktopMatrixProgressFill = fillObject.AddComponent<Image>();
+            desktopMatrixProgressFill.sprite = RoundedUiSprite();
+            desktopMatrixProgressFill.type = Image.Type.Filled;
+            desktopMatrixProgressFill.fillMethod = Image.FillMethod.Horizontal;
+            desktopMatrixProgressFill.fillOrigin = 0;
+            desktopMatrixProgressFill.fillAmount = Mathf.Clamp01(shownProgress);
+            desktopMatrixProgressFill.color = Amber;
+            desktopMatrixProgressFill.raycastTarget = false;
+
+            desktopMatrixProgressText = CreateText(parent, string.Empty,
+                32, FontStyle.Bold, new Vector2(0, -58),
+                new Vector2(760, 46), TextAnchor.MiddleCenter, Amber);
+            UpdateDesktopMatrixProgress();
+        }
+
+        private void UpdateDesktopMatrixProgress()
+        {
+            float shownProgress = resumeMaterializationAfterManifest
+                ? Mathf.Max(0.04f, displayedGridProgress)
+                : displayedGridProgress;
+            if (desktopMatrixProgressFill != null)
+                desktopMatrixProgressFill.fillAmount =
+                    Mathf.Clamp01(shownProgress);
+            if (desktopMatrixProgressText != null)
+                desktopMatrixProgressText.text =
+                    Mathf.RoundToInt(shownProgress * 100.0f) + "%";
+            if (desktopMatrixProgressStageText != null)
+                desktopMatrixProgressStageText.text =
+                    resumeMaterializationAfterManifest
+                        ? "Preparing dataset for MatPlot"
+                        : MaterializationStageLabel().ToUpperInvariant();
         }
 
         private Vector2 DesktopMatrixGridSize(Texture texture, Vector2 maximum)
@@ -11370,6 +11408,7 @@ namespace UnityVolumeRendering
                     MaterializationStageLabel().ToUpperInvariant();
             if (facetGridProgressFill != null)
                 facetGridProgressFill.fillAmount = displayedGridProgress;
+            UpdateDesktopMatrixProgress();
         }
 
         private IEnumerator AnimateGridProgress()
@@ -11655,9 +11694,19 @@ namespace UnityVolumeRendering
             BuildS4DGridRequest();
             if (slabPreviewCanvas != null)
             {
-                slabPreviewCanvas.transform.localPosition = SlabPreviewDockPosition;
-                ShowComposerTool(slabPreviewCanvas);
-                BuildSlabPreviewPanel();
+                if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                {
+                    // Desktop Intent owns the central task surface. Do not
+                    // flash the intermediate VR Slab preview before opening it.
+                    slabPreviewCanvas.gameObject.SetActive(false);
+                }
+                else
+                {
+                    slabPreviewCanvas.transform.localPosition =
+                        SlabPreviewDockPosition;
+                    ShowComposerTool(slabPreviewCanvas);
+                    BuildSlabPreviewPanel();
+                }
             }
             RecordTrailEvent("SLAB", "axis skeleton generated");
             BuildStage();
@@ -16410,7 +16459,6 @@ namespace UnityVolumeRendering
                 : 0.0f;
             displayedGridProgress = progress;
             targetGridProgress = progress;
-            lastStageProgressBucket = -1;
             DestroyTextures(streamingCellTextures);
             if (variableFacetStacksRoot != null)
                 Destroy(variableFacetStacksRoot);
@@ -16514,7 +16562,7 @@ namespace UnityVolumeRendering
                         " PANELS READY";
             }
             else if (stage == Stage.Matrix)
-                BuildStage();
+                UpdateDesktopMatrixProgress();
         }
 
         private void MergeCellIntoGridAtlas(int sourceIndex, Texture2D cell)
@@ -16980,25 +17028,20 @@ namespace UnityVolumeRendering
                 "  " + message + " (" + Mathf.RoundToInt(progress * 100) + "%)");
             bool gridVisible = facetGridCanvas != null &&
                 facetGridCanvas.gameObject.activeSelf;
+            if (gridProgressAnimation == null)
+                gridProgressAnimation = StartCoroutine(AnimateGridProgress());
             if (gridVisible)
             {
-                if (gridProgressAnimation == null)
-                    gridProgressAnimation = StartCoroutine(AnimateGridProgress());
                 if (facetGridProgressStageText != null)
                     facetGridProgressStageText.text =
                         MaterializationStageLabel().ToUpperInvariant();
             }
             else if (stage == Stage.Matrix)
             {
-                // The Matrix stage is still rebuilt when its coarse milestone changes,
-                // not for every network poll. This prevents a visible one-frame pause
-                // from destroying and recreating hundreds of UI objects each second.
-                int bucket = Mathf.Clamp(Mathf.FloorToInt(progress * 10.0f), 0, 10);
-                if (bucket != lastStageProgressBucket)
-                {
-                    lastStageProgressBucket = bucket;
-                    BuildStage();
-                }
+                // Keep the panel and all labels stable. Only mutate the three
+                // progress widgets; rebuilding the hierarchy here caused the
+                // visible text/layout jump on every network milestone.
+                UpdateDesktopMatrixProgress();
             }
         }
 
