@@ -28,6 +28,8 @@ namespace UnityVolumeRendering
         private VolumeSTCubeQuestSpatialWorkbench workbench;
         private RectTransform safeAreaRoot;
         private Text titleText;
+        private Text noticeText;
+        private float noticeExpiresAt;
         private GameObject helpPanel;
         private GameObject bottomBar;
         private Text bottomStatusText;
@@ -103,6 +105,13 @@ namespace UnityVolumeRendering
             titleText.fontStyle = FontStyle.Bold;
             titleText.alignment = TextAnchor.MiddleCenter;
             Stretch(titleText.rectTransform, 24.0f, 8.0f);
+            noticeText = CreateText(titleBar, string.Empty);
+            noticeText.fontSize = 24;
+            noticeText.fontStyle = FontStyle.Bold;
+            noticeText.alignment = TextAnchor.MiddleCenter;
+            noticeText.color = new Color(1.0f, 0.76f, 0.24f, 1.0f);
+            Stretch(noticeText.rectTransform, 24.0f, 8.0f);
+            noticeText.gameObject.SetActive(false);
 
             RectTransform actionBar = CreatePanel("Step Action Bar", safeAreaRoot,
                 new Color(0.030f, 0.055f, 0.082f, 0.97f))
@@ -193,6 +202,13 @@ namespace UnityVolumeRendering
 
         private void Update()
         {
+            if (noticeText != null && noticeText.gameObject.activeSelf &&
+                Time.unscaledTime >= noticeExpiresAt)
+            {
+                noticeText.gameObject.SetActive(false);
+                if (titleText != null)
+                    titleText.gameObject.SetActive(true);
+            }
             if (titleText != null && workbench != null)
             {
                 string title = workbench.DesktopWorkflowTitle;
@@ -270,10 +286,26 @@ namespace UnityVolumeRendering
         {
             if (button == null)
                 return;
-            button.interactable = available;
+            // A disabled Button swallows the user's intent without explaining
+            // what is missing. Keep guarded actions clickable and let the
+            // workbench report the exact prerequisite in the title strip.
+            button.interactable = true;
             Image image = button.GetComponent<Image>();
             if (image != null)
                 image.color = available ? activeColor : UtilityAction;
+        }
+
+        public static void ShowNotice(string message)
+        {
+            VolumeSTCubeFlatScreenHUD hud = activeHud;
+            if (hud == null || hud.noticeText == null ||
+                string.IsNullOrWhiteSpace(message))
+                return;
+            hud.noticeText.text = message.ToUpperInvariant();
+            hud.noticeText.gameObject.SetActive(true);
+            if (hud.titleText != null)
+                hud.titleText.gameObject.SetActive(false);
+            hud.noticeExpiresAt = Time.unscaledTime + 3.5f;
         }
 
         private void EnsureWorkflowButtons()
@@ -444,10 +476,22 @@ namespace UnityVolumeRendering
                         desktopTaskSurface ? 0.50f :
                             central ? 0.48f : 0.075f,
                         distance));
-                panel.transform.position = centre;
-                panel.transform.rotation = Quaternion.LookRotation(
+                Quaternion targetRotation = Quaternion.LookRotation(
                     centre - camera.transform.position, camera.transform.up);
-                panel.transform.localScale = Vector3.one * scale;
+                Vector3 targetScale = Vector3.one * scale;
+                float blend = 1.0f - Mathf.Exp(-9.0f *
+                    Mathf.Max(0.0f, Time.unscaledDeltaTime));
+                panel.transform.position = Vector3.Lerp(
+                    panel.transform.position, centre, blend);
+                panel.transform.rotation = Quaternion.Slerp(
+                    panel.transform.rotation, targetRotation, blend);
+                panel.transform.localScale = Vector3.Lerp(
+                    panel.transform.localScale, targetScale, blend);
+                if ((panel.transform.position - centre).sqrMagnitude < 0.000001f)
+                    panel.transform.position = centre;
+                if ((panel.transform.localScale - targetScale).sqrMagnitude <
+                    0.000001f)
+                    panel.transform.localScale = targetScale;
             }
         }
 

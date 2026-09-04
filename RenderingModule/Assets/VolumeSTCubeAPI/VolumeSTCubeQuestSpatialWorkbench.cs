@@ -739,7 +739,9 @@ namespace UnityVolumeRendering
         {
             get
             {
-                return !intentConfigured && !jobRunning &&
+                return stage == Stage.Slab && !jobRunning &&
+                    !resumeMaterializationAfterManifest &&
+                    !datasetManifestResolving &&
                     AreSpatialAxisBindingsComplete(out _) &&
                     authorBoundaryConfirmed;
             }
@@ -749,7 +751,11 @@ namespace UnityVolumeRendering
         {
             get
             {
-                return slabPreviewBuilt && intentConfigured &&
+                if (stage == Stage.Matrix && s4dGridImage != null &&
+                    !jobRunning)
+                    return true;
+                return stage == Stage.Slab && slabPreviewBuilt &&
+                    intentConfigured &&
                     AreSpatialAxisBindingsComplete(out _) &&
                     authorBoundaryConfirmed && !jobRunning &&
                     !resumeMaterializationAfterManifest &&
@@ -770,7 +776,12 @@ namespace UnityVolumeRendering
 
         public bool DesktopCanTransformMatrix
         {
-            get { return s4dGridImage != null && !jobRunning; }
+            get
+            {
+                return stage == Stage.Matrix && s4dGridImage != null &&
+                    !jobRunning && !resumeMaterializationAfterManifest &&
+                    !datasetManifestResolving;
+            }
         }
 
         public bool DesktopAxisBindingsComplete
@@ -849,6 +860,17 @@ namespace UnityVolumeRendering
 
         public void DesktopOpenFieldSetup()
         {
+            if (stage != Stage.Field)
+            {
+                RejectDesktopAction(
+                    "Time Range is only available in Step 2: Configure Field.");
+                return;
+            }
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("Please wait for the current operation to finish.");
+                return;
+            }
             if (authorBoundaryConfirmed)
                 EnterMainWorkspace();
             else
@@ -857,36 +879,83 @@ namespace UnityVolumeRendering
 
         public void DesktopTogglePlayback()
         {
-            if (forVrSurfacePlayer != null)
-                forVrSurfacePlayer.TogglePlayback();
+            if (stage != Stage.Field || !boundaryEditActive)
+            {
+                RejectDesktopAction("Open Set Time Range before using playback.");
+                return;
+            }
+            if (forVrSurfacePlayer == null)
+            {
+                RejectDesktopAction("Playback is not ready yet.");
+                return;
+            }
+            forVrSurfacePlayer.TogglePlayback();
         }
 
         public void DesktopCyclePlaybackSpeed()
         {
-            if (forVrSurfacePlayer != null)
-                forVrSurfacePlayer.CyclePlaybackSpeed();
+            if (stage != Stage.Field || !boundaryEditActive)
+            {
+                RejectDesktopAction("Open Set Time Range before changing playback speed.");
+                return;
+            }
+            if (forVrSurfacePlayer == null)
+            {
+                RejectDesktopAction("Playback is not ready yet.");
+                return;
+            }
+            forVrSurfacePlayer.CyclePlaybackSpeed();
         }
 
         public void DesktopCancelBoundary()
         {
+            if (stage != Stage.Field || !boundaryEditActive)
+            {
+                RejectDesktopAction("There is no active Time Range edit to cancel.");
+                return;
+            }
             CancelBoundaryEdit();
         }
 
         public void DesktopConfirmBoundary()
         {
+            if (stage != Stage.Field || !boundaryEditActive)
+            {
+                RejectDesktopAction("Open Set Time Range before confirming it.");
+                return;
+            }
             ApplyBoundaryChange();
         }
 
         public void DesktopContinueFromAxis()
         {
-            if (slabPreviewBuilt)
-                OpenIntentEditor();
-            else
-                ToolbarGenerateSlab();
+            DesktopOpenIntent();
         }
 
         public void DesktopOpenIntent()
         {
+            if (stage != Stage.Slab)
+            {
+                RejectDesktopAction(
+                    "MatPlot Intent is available in Step 3: Define the Slab.");
+                return;
+            }
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("Please wait for the current operation to finish.");
+                return;
+            }
+            if (!AreSpatialAxisBindingsComplete(out string missing))
+            {
+                RejectDesktopAction("Complete the axis controller first: " + missing);
+                return;
+            }
+            if (!authorBoundaryConfirmed)
+            {
+                RejectDesktopAction(
+                    "Confirm the Time and Depth ranges before opening Intent.");
+                return;
+            }
             // On desktop the Slab skeleton is an implementation detail. The
             // user moves directly from axis binding to Intent; prepare the
             // skeleton silently so there is no redundant Generate Slab step.
@@ -908,22 +977,83 @@ namespace UnityVolumeRendering
                 SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
                 return;
             }
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("The Full Matrix is already being prepared. Please wait.");
+                return;
+            }
+            if (stage != Stage.Slab)
+            {
+                RejectDesktopAction(
+                    "Full Matrix is available after the Slab is defined in Step 3.");
+                return;
+            }
+            if (!AreSpatialAxisBindingsComplete(out string missing))
+            {
+                RejectDesktopAction("Complete the axis controller first: " + missing);
+                return;
+            }
+            if (!authorBoundaryConfirmed)
+            {
+                RejectDesktopAction("Confirm the Time and Depth ranges first.");
+                return;
+            }
+            if (!intentConfigured)
+            {
+                RejectDesktopAction("Open MatPlot Intent and apply an analysis task first.");
+                return;
+            }
             BeginGridPlacement();
         }
 
         public void DesktopBeginPivot()
         {
+            if (!RequireDesktopMatrix("Pivot"))
+                return;
             BeginDraft(DraftOperation.Pivot);
         }
 
         public void DesktopBeginDrill()
         {
+            if (!RequireDesktopMatrix("Drill"))
+                return;
             BeginDraft(DraftOperation.Drill);
         }
 
         public void DesktopBeginRollUp()
         {
+            if (!RequireDesktopMatrix("Roll-up"))
+                return;
             BeginDraft(DraftOperation.RollUp);
+        }
+
+        private bool DesktopOperationPending()
+        {
+            return jobRunning || resumeMaterializationAfterManifest ||
+                datasetManifestResolving || intentResolving;
+        }
+
+        private bool RequireDesktopMatrix(string operation)
+        {
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("Please wait for the current operation to finish.");
+                return false;
+            }
+            if (stage != Stage.Matrix || s4dGridImage == null)
+            {
+                RejectDesktopAction(operation +
+                    " is available after Full Matrix finishes.");
+                return false;
+            }
+            return true;
+        }
+
+        private void RejectDesktopAction(string message)
+        {
+            SetStatus(message);
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                VolumeSTCubeFlatScreenHUD.ShowNotice(message);
         }
 
         public string DesktopWorkflowTitle
@@ -945,6 +1075,17 @@ namespace UnityVolumeRendering
 
         public void DesktopPreviousStep()
         {
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("Please wait for the current operation to finish.");
+                return;
+            }
+            if (stage == Stage.Field && boundaryEditActive)
+            {
+                RejectDesktopAction(
+                    "Confirm or cancel the current Time Range edit before going back.");
+                return;
+            }
             switch (stage)
             {
                 case Stage.Field: OpenDatasetImportStage(); break;
@@ -952,17 +1093,35 @@ namespace UnityVolumeRendering
                 case Stage.Matrix: NavigateDesktopStep(Stage.Slab); break;
                 case Stage.Analyze: NavigateDesktopStep(Stage.Matrix); break;
                 case Stage.Result: NavigateDesktopStep(Stage.Analyze); break;
-                default: SetStatus("This is the first step."); break;
+                default: RejectDesktopAction("This is the first step."); break;
             }
         }
 
         public void DesktopNextStep()
         {
+            if (DesktopOperationPending())
+            {
+                RejectDesktopAction("Please wait for the current operation to finish.");
+                return;
+            }
             switch (stage)
             {
-                case Stage.DatasetImport: ConfirmDatasetImport(); break;
+                case Stage.DatasetImport:
+                    if (datasets.Count == 0)
+                        RejectDesktopAction(
+                            "Choose a dataset folder before continuing.");
+                    else if (importSelectedVariableIndex < 0 ||
+                        importSelectedVariableIndex >= datasets.Count)
+                        RejectDesktopAction(
+                            "Select a variable before continuing.");
+                    else
+                        ConfirmDatasetImport();
+                    break;
                 case Stage.Field:
-                    if (!authorBoundaryConfirmed)
+                    if (boundaryEditActive)
+                        RejectDesktopAction(
+                            "Confirm or cancel the current Time Range edit first.");
+                    else if (!authorBoundaryConfirmed)
                         OpenInitialAuthorBoundary();
                     else
                         NavigateDesktopStep(Stage.Slab);
@@ -971,24 +1130,28 @@ namespace UnityVolumeRendering
                     if (!intentConfigured)
                         DesktopOpenIntent();
                     else
-                        BeginGridPlacement();
+                        DesktopBuildFullMatrix();
                     break;
                 case Stage.Matrix:
-                    if (!gridCellSelected)
-                        SetStatus("Choose a Matrix cell before continuing.");
+                    if (s4dGridImage == null)
+                        RejectDesktopAction(
+                            "Build the Full Matrix before continuing.");
+                    else if (!gridCellSelected)
+                        RejectDesktopAction(
+                            "Choose a Matrix cell before continuing.");
                     else
                         SelectS4DGridCell(selectedGridColumn, selectedGridRow);
                     break;
                 case Stage.Analyze: NavigateDesktopStep(Stage.Result); break;
-                default: SetStatus("This is the final step."); break;
+                default: RejectDesktopAction("This is the final step."); break;
             }
         }
 
         private void NavigateDesktopStep(Stage next)
         {
-            if (jobRunning)
+            if (DesktopOperationPending())
             {
-                SetStatus("Wait for the current MatPlot job to finish.");
+                RejectDesktopAction("Wait for the current operation to finish.");
                 return;
             }
             if (boundaryCanvas != null)
@@ -7214,16 +7377,27 @@ namespace UnityVolumeRendering
 
             CreateButton(intentContent,
                 intentResolving ? "WORKING" : "APPLY",
-                new Vector2(-150, -174),
-                new Vector2(260, 52), intentResolving ? Card : Purple,
+                new Vector2(
+                    VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ? 0 : -150,
+                    -174),
+                new Vector2(
+                    VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled ? 320 : 260,
+                    52), intentResolving ? Card : Purple,
                 ApplyIntentToFrame);
-            CreateButton(intentContent,
-                intentConfigured ? "FULL MATRIX" : "APPLY FIRST",
-                new Vector2(165, -174),
-                new Vector2(280, 52), intentConfigured ? Amber : Card,
-                BeginGridPlacement);
-            CreateButton(intentContent, "CLOSE", new Vector2(250, 214),
-                new Vector2(100, 34), Card, () => intentCanvas.gameObject.SetActive(false));
+            // Desktop keeps workflow navigation in the fixed bottom bar. The
+            // duplicate Full Matrix and Close controls could bypass that
+            // sequence, so retain them only on the original VR surface.
+            if (!VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                CreateButton(intentContent,
+                    intentConfigured ? "FULL MATRIX" : "APPLY FIRST",
+                    new Vector2(165, -174),
+                    new Vector2(280, 52), intentConfigured ? Amber : Card,
+                    BeginGridPlacement);
+                CreateButton(intentContent, "CLOSE", new Vector2(250, 214),
+                    new Vector2(100, 34), Card,
+                    () => intentCanvas.gameObject.SetActive(false));
+            }
         }
 
         private void BuildVrKeyboard()
@@ -7308,7 +7482,17 @@ namespace UnityVolumeRendering
         private void ApplyIntentToFrame()
         {
             if (intentResolving)
+            {
+                RejectDesktopAction(
+                    "The analysis task is already being resolved. Please wait.");
                 return;
+            }
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                RejectDesktopAction(
+                    "Choose an analysis task or enter a question before applying.");
+                return;
+            }
             if (voiceReviewPending)
                 ConfirmVoiceInput();
             ResolveCurrentIntent();
@@ -9491,6 +9675,12 @@ namespace UnityVolumeRendering
 
         private void SelectAnalysisTask(AnalysisTaskMode mode)
         {
+            if (intentResolving)
+            {
+                RejectDesktopAction(
+                    "Wait for the current Intent request before changing the task.");
+                return;
+            }
             analysisTaskMode = mode;
             string variable = importSelectedVariableIndex >= 0 &&
                 importSelectedVariableIndex < datasets.Count
@@ -17522,6 +17712,12 @@ namespace UnityVolumeRendering
 
         private void StartVoiceInput()
         {
+            if (intentResolving)
+            {
+                RejectDesktopAction(
+                    "Wait for the current Intent request before editing the task.");
+                return;
+            }
             // Editing the next analysis task is independent of an existing
             // materialization/digest job.  The previous guard made both VOICE
             // and TYPE appear clickable while silently ignoring the click.
@@ -17572,6 +17768,12 @@ namespace UnityVolumeRendering
 
         private void OpenTextKeyboard()
         {
+            if (intentResolving)
+            {
+                RejectDesktopAction(
+                    "Wait for the current Intent request before editing the task.");
+                return;
+            }
             Debug.Log("[QuestVoice] TYPE pressed. jobRunning=" + jobRunning);
             voiceReviewPending = false;
             voiceInputActive = false;
