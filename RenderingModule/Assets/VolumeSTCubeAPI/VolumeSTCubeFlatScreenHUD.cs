@@ -398,13 +398,18 @@ namespace UnityVolumeRendering
                 bool desktopImportedPanel =
                     panel.name == "S4D Anchored Facet Grid" ||
                     panel.name == "AI Findings";
-                bool desktopMatrixPanel = workbench != null &&
+                bool desktopMatrixResultPanel = workbench != null &&
                     workbench.DesktopMatrixTaskActive &&
                     panel.name == "S4D Anchored Facet Grid";
+                bool desktopMatrixProgressPanel = workbench != null &&
+                    workbench.DesktopMatrixProgressActive &&
+                    panel.name == "Slab Lab Spatial Console";
+                bool desktopMatrixPanel = desktopMatrixResultPanel ||
+                    desktopMatrixProgressPanel;
                 bool matrixPrimary = desktopMatrixPanel &&
                     workbench.DesktopMatrixPanelPrimary;
                 bool desktopTaskSurface = desktopComposer ||
-                    desktopImportedPanel;
+                    desktopImportedPanel || desktopMatrixProgressPanel;
                 if (workbench != null && workbench.DesktopCompactBarActive &&
                     !desktopTaskSurface)
                 {

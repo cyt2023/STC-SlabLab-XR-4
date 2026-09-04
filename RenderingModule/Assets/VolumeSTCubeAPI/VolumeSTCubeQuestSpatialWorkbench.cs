@@ -680,6 +680,16 @@ namespace UnityVolumeRendering
             get { return stage == Stage.Matrix; }
         }
 
+        public bool DesktopMatrixProgressActive
+        {
+            get
+            {
+                return stage == Stage.Matrix && s4dGridImage == null &&
+                    (jobRunning || resumeMaterializationAfterManifest ||
+                     datasetManifestResolving);
+            }
+        }
+
         public bool DesktopMatrixPanelPrimary
         {
             get
@@ -8972,6 +8982,8 @@ namespace UnityVolumeRendering
             panelCollider.center = new Vector3(0.0f, 0.0f, 14.0f);
             panelCollider.size = new Vector3(1120.0f, 840.0f, 8.0f);
             panelObject.AddComponent<VolumeSTCubeQuestPanelHandle>().accent = Cyan;
+            AddDesktopPanelFocusTarget(panelCanvas,
+                FocusDesktopMatrixPanel);
 
             GameObject headerWash = new GameObject("Console header wash", typeof(RectTransform));
             headerWash.transform.SetParent(rect, false);
