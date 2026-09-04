@@ -6645,6 +6645,8 @@ namespace UnityVolumeRendering
             facetGridContent = facetGridCanvas.GetComponent<RectTransform>();
             facetGridCanvasGroup = facetGridCanvas.gameObject.AddComponent<CanvasGroup>();
             facetGridCanvas.sortingOrder = 105;
+            AddDesktopPanelFocusTarget(facetGridCanvas,
+                FocusDesktopMatrixPanel);
             facetGridCanvas.gameObject.SetActive(false);
         }
 
@@ -6688,7 +6690,23 @@ namespace UnityVolumeRendering
                 Purple);
             intentContent = intentCanvas.GetComponent<RectTransform>();
             intentCanvas.sortingOrder = 122;
+            AddDesktopPanelFocusTarget(intentCanvas,
+                FocusDesktopIntentPanel);
             intentCanvas.gameObject.SetActive(false);
+        }
+
+        private static void AddDesktopPanelFocusTarget(Canvas panel,
+            Action focusAction)
+        {
+            if (panel == null || focusAction == null)
+                return;
+            VolumeSTCubeQuestClickTarget target =
+                panel.GetComponent<VolumeSTCubeQuestClickTarget>();
+            if (target == null)
+                target = panel.gameObject.AddComponent<
+                    VolumeSTCubeQuestClickTarget>();
+            target.AllowDesktopMouseDown = true;
+            target.Clicked = focusAction;
         }
 
         private void CreateDraftPanel()
@@ -9977,6 +9995,20 @@ namespace UnityVolumeRendering
         {
             if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
                 stage == Stage.Slab)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+        }
+
+        private void FocusDesktopIntentPanel()
+        {
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Slab && DesktopComposerPanelActive)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+        }
+
+        private void FocusDesktopMatrixPanel()
+        {
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Matrix)
                 SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
         }
 
