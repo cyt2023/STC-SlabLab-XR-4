@@ -745,7 +745,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Standalone: SLABLAB_FLAT
+    Standalone: SLABLAB_DESKTOP;SLABLAB_FLAT
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

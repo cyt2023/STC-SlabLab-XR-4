@@ -18,8 +18,17 @@ start_service() {
   local name="$1" port="$2" workdir="$3" pidfile="$4"
   shift 4
   if curl -fsS --max-time 2 "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
-    echo "$name is already healthy on port $port."
-    return
+    local actual_root expected_root
+    actual_root="$(curl -fsS --max-time 2 "http://127.0.0.1:$port/health" | \
+      "$python" -c 'import json,sys; print(json.load(sys.stdin).get("workspaceRoot", ""))')"
+    expected_root="$(cd "$workdir" && pwd -P)"
+    if [[ "$actual_root" == "$expected_root" ]]; then
+      echo "$name is already healthy on port $port."
+      return
+    fi
+    echo "Port $port is serving a different STC SlabLab copy: $actual_root" >&2
+    echo "Stop that backend before starting this package: $expected_root" >&2
+    exit 1
   fi
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port $port is occupied by another process." >&2

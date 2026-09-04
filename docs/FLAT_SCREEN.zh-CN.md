@@ -40,6 +40,10 @@ Desktop/Pad 使用固定的引导式页面，而不是 VR 的自由空间面板�
 
 流程依次为 `Open Dataset → Configure Field → Define Slab → Review Matrix → Analyze → Review Findings`。数据集导入页完整居中；从 Field 配置开始，大型 VR 浮动面板会收进底部工作条，把中央画面留给数据。时间范围编辑时中央显示 STC，右侧显示 Prediction/Ground Truth 切片，底栏保留播放、速度、返回和确认；CUT A/CUT B 仍可直接拖动。桌面模式不允许抓取或移动面板。
 
+导入页只显示扫描到的变量，不要求预先选择。`Continue` 会自动使用
+`Prediction_HS`（存在时）或第一个有效变量进入 Field；进入工作区后仍可通过
+`Display Data` 切换变量。
+
 | 功能 | 电脑 | 平板 |
 | --- | --- | --- |
 | 选择按钮/对象 | 鼠标左键 | 单指点按 |
@@ -66,6 +70,19 @@ VolumeSTCube > Desktop > Export iPad Xcode Project
 ```
 
 构建结果写入 `RenderingModule/Builds/`（已被 Git 忽略）。桌面构建脚本会启用 `SLABLAB_DESKTOP`（并暂时保留兼容标记 `SLABLAB_FLAT`）、移除 `SLABLAB_VR`，同时关闭该平台的 XR 自动启动。
+
+### 可发送的 macOS 软件包
+
+先在 Unity 选择 `VolumeSTCube > Desktop > Build macOS`，然后在仓库根目录运行：
+
+```bash
+./Packaging/macOS/package-macos.sh
+```
+
+最终文件为 `RenderingModule/Builds/STC-SlabLab-macOS.zip`。压缩包包含桌面
+App、演示数据、S4D/MatPlot 后端以及一键安装、启动和停止脚本。接收者首次运行
+`Setup Backend.command`，以后运行 `Start STC SlabLab.command` 即可。详细步骤在
+包内的 `README-START-HERE.txt`。
 
 ## 后端
 

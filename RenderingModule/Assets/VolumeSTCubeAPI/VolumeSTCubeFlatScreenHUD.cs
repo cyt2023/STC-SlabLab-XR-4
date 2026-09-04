@@ -237,6 +237,16 @@ namespace UnityVolumeRendering
             bottomBar.SetActive(visible);
             if (!visible)
                 return;
+            // Runtime-created HUD references can be cleared by an Editor script
+            // reload while their GameObjects survive. Never let that transient
+            // state turn into an exception every frame.
+            if (bottomStatusText == null || primaryButton == null ||
+                playbackButton == null || speedButton == null ||
+                backButton == null || confirmButton == null ||
+                intentButton == null || fullMatrixButton == null ||
+                pivotButton == null || drillButton == null ||
+                rollUpButton == null)
+                return;
             // Step 3 has its own axis-binding workflow. It takes precedence
             // over any stale boundary flag so time controls can never leak
             // into the next step.
@@ -310,6 +320,21 @@ namespace UnityVolumeRendering
 
         private void EnsureWorkflowButtons()
         {
+            if (bottomBar == null)
+                return;
+            if (bottomStatusText == null)
+            {
+                for (int index = 0; index < bottomBar.transform.childCount;
+                    index++)
+                {
+                    Transform child = bottomBar.transform.GetChild(index);
+                    Text candidate = child.GetComponent<Text>();
+                    if (candidate == null)
+                        continue;
+                    bottomStatusText = candidate;
+                    break;
+                }
+            }
             if (primaryButton == null)
                 primaryButton = FindBottomButton("SET TIME RANGE");
             if (playbackButton == null)
@@ -330,7 +355,7 @@ namespace UnityVolumeRendering
                 drillButton = FindBottomButton("DRILL");
             if (rollUpButton == null)
                 rollUpButton = FindBottomButton("ROLL-UP");
-            if (bottomBar == null || workbench == null)
+            if (workbench == null)
                 return;
             if (intentButton == null)
                 intentButton = CreateButton("MATPLOT INTENT", bottomBar.transform,

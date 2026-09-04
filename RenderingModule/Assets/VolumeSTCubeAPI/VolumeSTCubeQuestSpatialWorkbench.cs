@@ -1034,7 +1034,8 @@ namespace UnityVolumeRendering
         private bool DesktopOperationPending()
         {
             return jobRunning || resumeMaterializationAfterManifest ||
-                datasetManifestResolving || intentResolving;
+                datasetManifestResolving || intentResolving ||
+                variableLoadRunning;
         }
 
         private bool RequireDesktopMatrix(string operation)
@@ -1114,10 +1115,6 @@ namespace UnityVolumeRendering
                     if (datasets.Count == 0)
                         RejectDesktopAction(
                             "Choose a dataset folder before continuing.");
-                    else if (importSelectedVariableIndex < 0 ||
-                        importSelectedVariableIndex >= datasets.Count)
-                        RejectDesktopAction(
-                            "Select a variable before continuing.");
                     else
                         ConfirmDatasetImport();
                     break;
@@ -1247,20 +1244,9 @@ namespace UnityVolumeRendering
             RefreshDatasets();
             if (datasets.Count > 0)
             {
-                // Discovery may preselect the most useful variable, but opening
-                // a dataset is an explicit user decision on both flat screen
-                // and Quest. Auto-confirming here skipped the first workflow
-                // page whenever bundled/local For_VR data was present.
-                importSelectedVariableIndex = 0;
-                for (int index = 0; index < datasets.Count; index++)
-                {
-                    if (string.Equals(datasets[index].Name, "Prediction_HS",
-                        StringComparison.OrdinalIgnoreCase))
-                    {
-                        importSelectedVariableIndex = index;
-                        break;
-                    }
-                }
+                // The import page reports all discovered variables. It does
+                // not ask users to choose one before the workflow can start.
+                EnsureDefaultImportVariable();
                 stage = Stage.DatasetImport;
                 BuildStage();
             }
@@ -9288,10 +9274,7 @@ namespace UnityVolumeRendering
             {
                 SetStatus("Dataset discovery failed: " + exception.Message);
             }
-            if (datasets.Count == 1 && importSelectedVariableIndex < 0)
-                importSelectedVariableIndex = 0;
-            else if (importSelectedVariableIndex >= datasets.Count)
-                importSelectedVariableIndex = -1;
+            EnsureDefaultImportVariable();
             RefreshFieldDatasetSelector();
             RefreshSpatialAxisControllers();
             BuildStage();
@@ -9629,40 +9612,35 @@ namespace UnityVolumeRendering
                 new Vector2(230, 58), Card,
                 () => RefreshDatasets(dataRoot));
 
-            int visibleVariables = datasets.Count;
-            float buttonWidth = visibleVariables > 0
-                ? Mathf.Min(260.0f, 780.0f / visibleVariables) : 240.0f;
-            float start = -(visibleVariables - 1) * (buttonWidth + 16.0f) * 0.5f;
-            for (int index = 0; index < visibleVariables; index++)
-            {
-                int captured = index;
-                CreateButton(panelContent, datasets[index].Name.ToUpperInvariant(),
-                    new Vector2(start + index * (buttonWidth + 16.0f), 5),
-                    new Vector2(buttonWidth, 64),
-                    importSelectedVariableIndex == index ? Amber : Card,
-                    () => SelectImportVariable(captured));
-            }
+            CreatePanelCard(panelContent, new Vector2(0, -10),
+                new Vector2(860, 170), datasets.Count > 0 ? Cyan : Card);
+            CreateText(panelContent,
+                datasets.Count > 0
+                    ? "VARIABLES FOUND (" + datasets.Count + ")\n" +
+                        DatasetNamesMultiline().ToUpperInvariant()
+                    : "NO VARIABLES FOUND",
+                13, FontStyle.Bold, new Vector2(0, -10),
+                new Vector2(810, 154), TextAnchor.MiddleCenter,
+                datasets.Count > 0 ? Ink : Muted);
             CreateButton(panelContent,
-                 importSelectedVariableIndex >= 0
-                     ? "CONTINUE WITH " + datasets[importSelectedVariableIndex].Name.ToUpperInvariant()
-                     : datasets.Count > 0 ? "SELECT A VARIABLE" : "WAITING FOR DATASET",
-                new Vector2(0, -94), new Vector2(700, 72),
-                importSelectedVariableIndex >= 0 ? Cyan : Card,
+                datasets.Count > 0 ? "CONTINUE" : "WAITING FOR DATASET",
+                new Vector2(0, -164), new Vector2(700, 72),
+                datasets.Count > 0 ? Cyan : Card,
                 ConfirmDatasetImport);
 
             // Mode selection belongs on the opening page and remains separate
             // from dataset choice. Reloading the scene rebuilds the complete rig
             // from one locked mode instead of mutating a live desktop/VR rig.
             CreateText(panelContent, "MODE", 17, FontStyle.Bold,
-                new Vector2(120, -230), new Vector2(110, 48),
+                new Vector2(120, -266), new Vector2(110, 48),
                 TextAnchor.MiddleRight, Muted);
             VolumeSTCubeApplicationMode activeMode = VolumeSTCubeMode.Current;
             CreateButton(panelContent, "DESKTOP",
-                new Vector2(265, -230), new Vector2(180, 54),
+                new Vector2(265, -266), new Vector2(180, 54),
                 activeMode == VolumeSTCubeApplicationMode.Desktop ? Cyan : Card,
                 () => SelectApplicationMode(VolumeSTCubeApplicationMode.Desktop));
             CreateButton(panelContent, "VR",
-                new Vector2(425, -230), new Vector2(110, 54),
+                new Vector2(425, -266), new Vector2(110, 54),
                 activeMode == VolumeSTCubeApplicationMode.VirtualReality ? Cyan : Card,
                 () => SelectApplicationMode(
                     VolumeSTCubeApplicationMode.VirtualReality));
@@ -9735,14 +9713,26 @@ namespace UnityVolumeRendering
                 BuildIntentPanel();
         }
 
-        private void SelectImportVariable(int index)
+        private bool EnsureDefaultImportVariable()
         {
-            if (index < 0 || index >= datasets.Count)
-                return;
-            importSelectedVariableIndex = index;
-            SelectAnalysisTask(analysisTaskMode);
-            SetStatus(datasets[index].Name +
-                " selected. Continue to define Time and Depth.");
+            if (datasets.Count == 0)
+            {
+                importSelectedVariableIndex = -1;
+                return false;
+            }
+            if (importSelectedVariableIndex >= 0 &&
+                importSelectedVariableIndex < datasets.Count)
+                return true;
+            importSelectedVariableIndex = 0;
+            for (int index = 0; index < datasets.Count; index++)
+            {
+                if (!string.Equals(datasets[index].Name, "Prediction_HS",
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+                importSelectedVariableIndex = index;
+                break;
+            }
+            return true;
         }
 
         private string DatasetCompatibilitySummary()
@@ -9768,6 +9758,16 @@ namespace UnityVolumeRendering
             for (int i = 0; i < datasets.Count; i++)
                 names[i] = datasets[i].Name;
             return string.Join(" / ", names);
+        }
+
+        private string DatasetNamesMultiline()
+        {
+            if (datasets.Count == 0)
+                return "no variables";
+            string[] names = new string[datasets.Count];
+            for (int i = 0; i < datasets.Count; i++)
+                names[i] = datasets[i].Name;
+            return string.Join("\n", names);
         }
 
         private void ChooseDatasetFolder()
@@ -9833,10 +9833,9 @@ namespace UnityVolumeRendering
                 SetStatus("Choose a folder containing variable subfolders with RAW + .raw.ini files.");
                 return;
             }
-            if (importSelectedVariableIndex < 0 ||
-                importSelectedVariableIndex >= datasets.Count)
+            if (!EnsureDefaultImportVariable())
             {
-                SetStatus("Select a variable before entering the Field setup.");
+                SetStatus("No valid variable is available in this dataset.");
                 BuildStage();
                 return;
             }
@@ -15422,8 +15421,29 @@ namespace UnityVolumeRendering
             // texture upload. Without this yield Quest appears frozen after click.
             yield return null;
             yield return new WaitForEndOfFrame();
-            LoadDatasetNow(index);
-            variableLoadRunning = false;
+            bool loaded = false;
+            try
+            {
+                loaded = LoadDatasetNow(index);
+            }
+            catch (Exception exception)
+            {
+                HandleDatasetLoadFailure(
+                    "Unexpected error while opening the dataset: " +
+                    exception.Message);
+            }
+            finally
+            {
+                // Never leave the application permanently locked in a loading
+                // state when a malformed RAW file or GPU upload throws.
+                variableLoadRunning = false;
+            }
+            if (!loaded)
+            {
+                pendingDatasetLoadIndex = -1;
+                BuildStage();
+                yield break;
+            }
             if (pendingDatasetLoadIndex >= 0 &&
                 pendingDatasetLoadIndex < datasets.Count &&
                 datasets[pendingDatasetLoadIndex] != selectedDataset)
@@ -15437,10 +15457,10 @@ namespace UnityVolumeRendering
             BuildStage();
         }
 
-        private void LoadDatasetNow(int index)
+        private bool LoadDatasetNow(int index)
         {
             if (index < 0 || index >= datasets.Count)
-                return;
+                return false;
             VolumeSTCubeSliceDataset next = datasets[index];
             int requestedDisplayTime = pendingDatasetDisplayTime;
             bool shouldResumePlayback = resumePlaybackAfterDatasetLoad;
@@ -15506,8 +15526,8 @@ namespace UnityVolumeRendering
             if (!VolumeSTCubeAPI.TryCreateViewFromRawDataset(
                 next, config, out currentView, out string error))
             {
-                SetStatus(error);
-                return;
+                HandleDatasetLoadFailure(error);
+                return false;
             }
 
             selectedDataset = next;
@@ -15578,6 +15598,33 @@ namespace UnityVolumeRendering
                 if (panelCanvas != null)
                     panelCanvas.gameObject.SetActive(false);
             }
+            return true;
+        }
+
+        private void HandleDatasetLoadFailure(string error)
+        {
+            if (currentView != null)
+            {
+                VolumeSTCubeAPI.DestroyView(currentView.viewId);
+                currentView = null;
+            }
+            selectedDataset = null;
+            datasetImportConfirmed = false;
+            preconfigurationActive = false;
+            mainWorkspaceEntered = false;
+            authorBoundaryConfirmed = false;
+            stage = Stage.DatasetImport;
+            if (spatialRoot != null)
+                spatialRoot.SetActive(false);
+            if (panelCanvas != null)
+                ShowPrimaryTool(panelCanvas);
+            string message = "Could not open the dataset. " +
+                (string.IsNullOrWhiteSpace(error)
+                    ? "Check the RAW and .raw.ini files."
+                    : error);
+            SetStatus(message);
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                VolumeSTCubeFlatScreenHUD.ShowNotice(message);
         }
 
         private System.Collections.IEnumerator RevealVolumeWhenTexturesReady(
