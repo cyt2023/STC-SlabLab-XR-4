@@ -1458,6 +1458,13 @@ namespace UnityVolumeRendering
             {
                 facetGridCanvas.gameObject.SetActive(false);
                 SetFacetSelectionEvidencePreview(false);
+                if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                    stage == Stage.Matrix && panelCanvas != null)
+                {
+                    ShowPrimaryTool(panelCanvas);
+                    BuildStage();
+                    VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
+                }
             }
         }
 

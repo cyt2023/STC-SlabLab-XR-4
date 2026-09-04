@@ -402,8 +402,16 @@ namespace UnityVolumeRendering
                     workbench.DesktopComposerPanelActive &&
                     (panel.name == "FacetSlab Configuration Preview" ||
                      panel.name == "MatPlotAgent Intent Composer");
+                // Reuse the proven VR interaction surfaces for the advanced
+                // analysis operations. On desktop they are treated as the one
+                // central task surface and fitted between the fixed toolbars.
+                bool desktopImportedPanel =
+                    panel.name == "S4D Anchored Facet Grid" ||
+                    panel.name == "AI Findings";
+                bool desktopTaskSurface = desktopComposer ||
+                    desktopImportedPanel;
                 if (workbench != null && workbench.DesktopCompactBarActive &&
-                    !desktopComposer)
+                    !desktopTaskSurface)
                 {
                     panel.enabled = false;
                     continue;
@@ -423,7 +431,8 @@ namespace UnityVolumeRendering
                     panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
                     new Vector3(0.5f,
-                        desktopComposer ? 0.50f : central ? 0.48f : 0.075f,
+                        desktopTaskSurface ? 0.50f :
+                            central ? 0.48f : 0.075f,
                         distance));
                 panel.transform.position = centre;
                 panel.transform.rotation = Quaternion.LookRotation(
