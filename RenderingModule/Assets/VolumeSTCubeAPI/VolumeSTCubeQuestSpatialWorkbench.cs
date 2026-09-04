@@ -779,6 +779,15 @@ namespace UnityVolumeRendering
             }
         }
 
+        public bool DesktopIntentPanelPrimary
+        {
+            get
+            {
+                return DesktopComposerPanelActive &&
+                    desktopFocusView == DesktopFocusView.SlabAxis;
+            }
+        }
+
         public string DesktopSlabActionLabel
         {
             get { return slabPreviewBuilt ? "MATPLOT INTENT" : "GENERATE SLAB"; }
@@ -9821,26 +9830,16 @@ namespace UnityVolumeRendering
             // path entered it. Tying it to mainWorkspaceEntered left the axis
             // area empty after some valid time-range transitions.
             bool slabLayout = stage == Stage.Slab;
-            // GENERATE SLAB replaces the three visualization work areas with
-            // one readable task panel. Keeping both layers visible would put
-            // world content behind the panel and violate the desktop layout's
-            // non-overlap rule.
             bool composerPanel = DesktopComposerPanelActive;
-            if (composerPanel)
-            {
-                if (desktopFocusAnimation != null)
-                    StopCoroutine(desktopFocusAnimation);
-                desktopFocusAnimation = null;
-                spatialRoot.SetActive(false);
-                companion.DesktopFieldTransform.gameObject.SetActive(false);
-                if (spatialAxisComposerRoot != null)
-                    spatialAxisComposerRoot.SetActive(false);
-                return;
-            }
             if (slabLayout)
             {
                 spatialRoot.SetActive(true);
                 companion.DesktopFieldTransform.gameObject.SetActive(true);
+                // Intent replaces the axis body in the right-hand task lane;
+                // both Fields remain visible and keep their click-to-focus
+                // behaviour on the left.
+                if (composerPanel && spatialAxisComposerRoot != null)
+                    spatialAxisComposerRoot.SetActive(false);
             }
             if (timeSelection)
             {
@@ -10064,9 +10063,10 @@ namespace UnityVolumeRendering
             if (spatialAxisComposerRoot != null)
             {
                 spatialAxisComposerRoot.SetActive(
-                    focus == DesktopFocusView.SlabAxis ||
-                    focus == DesktopFocusView.SlabSurface ||
-                    focus == DesktopFocusView.SlabStc);
+                    !DesktopComposerPanelActive &&
+                    (focus == DesktopFocusView.SlabAxis ||
+                     focus == DesktopFocusView.SlabSurface ||
+                     focus == DesktopFocusView.SlabStc));
                 spatialAxisComposerRoot.transform.position = axisPosition;
                 spatialAxisComposerRoot.transform.localScale = axisScale;
             }
@@ -10092,7 +10092,8 @@ namespace UnityVolumeRendering
                 focus == DesktopFocusView.SlabSurface ||
                 focus == DesktopFocusView.SlabStc;
             if (spatialAxisComposerRoot != null)
-                spatialAxisComposerRoot.SetActive(slabFocus);
+                spatialAxisComposerRoot.SetActive(
+                    slabFocus && !DesktopComposerPanelActive);
 
             float elapsed = 0.0f;
             const float duration = 0.58f;
@@ -13949,6 +13950,8 @@ namespace UnityVolumeRendering
                 return;
             }
             spatialWorkflowStep = SpatialWorkflowStep.Intent;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, false);
             if (intentCanvas != null)
             {
                 HidePrimaryToolsExcept(intentCanvas);

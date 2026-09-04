@@ -390,6 +390,8 @@ namespace UnityVolumeRendering
                     workbench.DesktopComposerPanelActive &&
                     (panel.name == "FacetSlab Configuration Preview" ||
                      panel.name == "MatPlotAgent Intent Composer");
+                bool intentPrimary = desktopComposer && workbench != null &&
+                    workbench.DesktopIntentPanelPrimary;
                 // Reuse the proven VR interaction surfaces for the advanced
                 // analysis operations. On desktop they are treated as the one
                 // central task surface and fitted between the fixed toolbars.
@@ -409,16 +411,19 @@ namespace UnityVolumeRendering
                 if (rect == null)
                     continue;
                 float panelHorizontalWorld = desktopComposer
-                    ? viewHeight * camera.aspect * 0.72f
+                    ? viewHeight * camera.aspect *
+                        (intentPrimary ? 0.48f : 0.25f)
                     : horizontalWorld;
                 float panelVerticalWorld = desktopComposer
-                    ? viewHeight * 0.68f
+                    ? viewHeight * (intentPrimary ? 0.68f : 0.38f)
                     : verticalWorld;
                 float scale = Mathf.Min(
                     panelHorizontalWorld / Mathf.Max(1.0f, rect.sizeDelta.x),
                     panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
-                    new Vector3(0.5f,
+                    new Vector3(desktopComposer
+                            ? intentPrimary ? 0.70f : 0.84f
+                            : 0.5f,
                         desktopTaskSurface ? 0.50f :
                             central ? 0.48f : 0.075f,
                         distance));
