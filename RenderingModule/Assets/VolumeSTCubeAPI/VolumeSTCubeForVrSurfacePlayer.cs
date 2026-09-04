@@ -521,7 +521,13 @@ namespace UnityVolumeRendering
             Collider collider = map.GetComponent<Collider>();
             if (collider != null)
                 Destroy(collider);
-            Material mapMaterial = new Material(Shader.Find("Unlit/Texture"));
+            Shader mapShader = Shader.Find("Unlit/Texture");
+            if (mapShader == null)
+                mapShader = Shader.Find("Sprites/Default");
+            if (mapShader == null)
+                throw new System.InvalidOperationException(
+                    "No texture shader is available in this build.");
+            Material mapMaterial = new Material(mapShader);
             mapMaterial.mainTexture = Resources.Load<Texture2D>("HongKongOSM");
             map.GetComponent<Renderer>().material = mapMaterial;
 

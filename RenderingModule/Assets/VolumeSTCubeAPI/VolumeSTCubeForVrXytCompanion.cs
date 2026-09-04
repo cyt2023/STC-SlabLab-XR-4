@@ -580,7 +580,7 @@ namespace UnityVolumeRendering
             Collider collider = map.GetComponent<Collider>();
             if (collider != null)
                 Destroy(collider);
-            Material material = new Material(Shader.Find("Unlit/Texture"));
+            Material material = new Material(ResolveTextureShader());
             material.mainTexture = Resources.Load<Texture2D>("HongKongOSM");
             material.color = Color.white;
             material.renderQueue = 2990;
@@ -1231,7 +1231,7 @@ namespace UnityVolumeRendering
             Collider collider = map.GetComponent<Collider>();
             if (collider != null)
                 Destroy(collider);
-            Material mapMaterial = new Material(Shader.Find("Unlit/Texture"));
+            Material mapMaterial = new Material(ResolveTextureShader());
             mapMaterial.mainTexture = Resources.Load<Texture2D>("HongKongOSM");
             mapMaterial.color = new Color(1.0f, 1.0f, 1.0f, 0.94f);
             mapMaterial.renderQueue = 3060;
@@ -1880,6 +1880,17 @@ namespace UnityVolumeRendering
             double latitude = Math.Max(-85.05112878,
                 Math.Min(85.05112878, latitudeDegrees)) * Math.PI / 180.0;
             return Math.Log(Math.Tan(Math.PI * 0.25 + latitude * 0.5));
+        }
+
+        private static Shader ResolveTextureShader()
+        {
+            Shader shader = Shader.Find("Unlit/Texture");
+            if (shader == null)
+                shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+                throw new InvalidOperationException(
+                    "No texture shader is available in this build.");
+            return shader;
         }
 
         private void OnDestroy()

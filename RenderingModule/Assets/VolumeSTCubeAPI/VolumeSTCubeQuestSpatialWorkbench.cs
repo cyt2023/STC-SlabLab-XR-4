@@ -15428,6 +15428,7 @@ namespace UnityVolumeRendering
             }
             catch (Exception exception)
             {
+                Debug.LogException(exception);
                 HandleDatasetLoadFailure(
                     "Unexpected error while opening the dataset: " +
                     exception.Message);
