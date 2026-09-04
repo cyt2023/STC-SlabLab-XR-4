@@ -244,12 +244,20 @@ namespace UnityVolumeRendering
             rollUpButton.gameObject.SetActive(workflow);
             if (workflow)
             {
-                intentButton.interactable = workbench.DesktopCanOpenIntent;
-                fullMatrixButton.interactable = workbench.DesktopCanBuildMatrix;
+                axisNextButton.gameObject.SetActive(true);
+                SetButtonText(axisNextButton, "GENERATE SLAB");
+                SetWorkflowButtonState(axisNextButton,
+                    workbench.DesktopCanGenerateSlab, ConfirmAction);
+                SetWorkflowButtonState(intentButton,
+                    workbench.DesktopCanOpenIntent, HelpAction);
+                SetWorkflowButtonState(fullMatrixButton,
+                    workbench.DesktopCanBuildMatrix, ConfirmAction);
                 bool canTransform = workbench.DesktopCanTransformMatrix;
-                pivotButton.interactable = canTransform;
-                drillButton.interactable = canTransform;
-                rollUpButton.interactable = canTransform;
+                SetWorkflowButtonState(pivotButton, canTransform, HelpAction);
+                SetWorkflowButtonState(drillButton, canTransform,
+                    PrimaryAction);
+                SetWorkflowButtonState(rollUpButton, canTransform,
+                    new Color(0.10f, 0.62f, 0.34f, 1.0f));
             }
             if (axis)
             {
@@ -263,6 +271,17 @@ namespace UnityVolumeRendering
             }
             SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
             SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
+        }
+
+        private static void SetWorkflowButtonState(Button button,
+            bool available, Color activeColor)
+        {
+            if (button == null)
+                return;
+            button.interactable = available;
+            Image image = button.GetComponent<Image>();
+            if (image != null)
+                image.color = available ? activeColor : UtilityAction;
         }
 
         private void EnsureWorkflowButtons()

@@ -689,20 +689,28 @@ namespace UnityVolumeRendering
 
         public bool DesktopBoundaryBarActive
         {
-            get { return boundaryEditActive; }
+            get { return stage == Stage.Field && boundaryEditActive; }
         }
 
         public bool DesktopAxisBarActive
         {
-            get { return stage == Stage.Slab && !slabPreviewBuilt; }
+            get { return false; }
         }
 
         public bool DesktopWorkflowBarActive
         {
             get
             {
-                return (stage == Stage.Slab && slabPreviewBuilt) ||
-                    stage == Stage.Matrix;
+                return stage == Stage.Slab || stage == Stage.Matrix;
+            }
+        }
+
+        public bool DesktopCanGenerateSlab
+        {
+            get
+            {
+                return stage == Stage.Slab && !slabPreviewBuilt &&
+                    AreSpatialAxisBindingsComplete(out _);
             }
         }
 
@@ -710,14 +718,20 @@ namespace UnityVolumeRendering
         {
             get
             {
-                return AreSpatialAxisBindingsComplete(out _) &&
+                return slabPreviewBuilt && !intentConfigured &&
+                    AreSpatialAxisBindingsComplete(out _) &&
                     authorBoundaryConfirmed;
             }
         }
 
         public bool DesktopCanBuildMatrix
         {
-            get { return DesktopCanOpenIntent && intentConfigured && !jobRunning; }
+            get
+            {
+                return slabPreviewBuilt && intentConfigured &&
+                    AreSpatialAxisBindingsComplete(out _) &&
+                    authorBoundaryConfirmed && !jobRunning;
+            }
         }
 
         public bool DesktopCanTransformMatrix
