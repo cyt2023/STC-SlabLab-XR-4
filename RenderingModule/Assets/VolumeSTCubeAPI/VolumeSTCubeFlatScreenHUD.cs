@@ -432,7 +432,8 @@ namespace UnityVolumeRendering
                     panel.name == "AI Findings";
                 bool desktopMatrixResultPanel = workbench != null &&
                     workbench.DesktopMatrixTaskActive &&
-                    panel.name == "S4D Anchored Facet Grid";
+                    (panel.name == "S4D Anchored Facet Grid" ||
+                     panel.name == "AI Findings");
                 bool desktopMatrixProgressPanel = workbench != null &&
                     workbench.DesktopMatrixProgressActive &&
                     panel.name == "Slab Lab Spatial Console";

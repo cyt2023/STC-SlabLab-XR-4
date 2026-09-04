@@ -684,7 +684,11 @@ namespace UnityVolumeRendering
         {
             get
             {
-                return stage == Stage.Matrix && s4dGridImage == null &&
+                // A Drill/Pivot/Roll-up keeps the previous matrix alive as its
+                // immutable source while the replacement is generated. Do not
+                // use s4dGridImage == null as the progress condition: that hid
+                // the progress surface for every transformation job.
+                return stage == Stage.Matrix &&
                     (jobRunning || resumeMaterializationAfterManifest ||
                      datasetManifestResolving);
             }
@@ -6833,6 +6837,8 @@ namespace UnityVolumeRendering
                 Green);
             aiFindingsContent = aiFindingsCanvas.GetComponent<RectTransform>();
             aiFindingsCanvas.sortingOrder = 132;
+            AddDesktopPanelFocusTarget(aiFindingsCanvas,
+                FocusDesktopMatrixPanel);
             aiFindingsCanvas.gameObject.SetActive(false);
         }
 
@@ -7003,6 +7009,13 @@ namespace UnityVolumeRendering
             placementConfirmed = true;
             spatialWorkflowStep = SpatialWorkflowStep.Materializing;
             stage = Stage.Matrix;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+            {
+                // Generation is the active task now. Bring its progress panel
+                // to the primary lane even when the user started Drill/Pivot/
+                // Roll-up while a Field was enlarged.
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
+            }
             materializationVariableCursor = -1;
             // Clear every visual trace of the source result before rebuilding
             // the generation view. StartS4DGridJob also initializes these
@@ -10764,8 +10777,8 @@ namespace UnityVolumeRendering
                 return;
             }
 
-            if ((jobRunning || resumeMaterializationAfterManifest) &&
-                s4dGridImage == null)
+            if (jobRunning || resumeMaterializationAfterManifest ||
+                datasetManifestResolving)
             {
                 desktopMatrixProgressStageText = CreateText(panelContent,
                     resumeMaterializationAfterManifest
@@ -11195,6 +11208,9 @@ namespace UnityVolumeRendering
         {
             if (aiFindingsCanvas == null)
                 return;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                stage == Stage.Matrix)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
             if (facetGridCanvas != null)
             {
                 aiFindingsCanvas.transform.position =
@@ -11205,6 +11221,8 @@ namespace UnityVolumeRendering
             HidePrimaryToolsExcept(aiFindingsCanvas);
             aiFindingsCanvas.gameObject.SetActive(true);
             BuildAiFindingsPanel();
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
         }
 
         private void CloseAiFindingsPanel()
@@ -16734,6 +16752,8 @@ namespace UnityVolumeRendering
             variableFacetStackTextures.Clear();
             s4dGridFailure = string.Empty;
             stage = Stage.Matrix;
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled)
+                SetDesktopFocusView(DesktopFocusView.SlabAxis, true);
             if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
                 panelCanvas != null)
             {
