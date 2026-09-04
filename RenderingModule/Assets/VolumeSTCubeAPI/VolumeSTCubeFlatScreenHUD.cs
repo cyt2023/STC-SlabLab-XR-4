@@ -252,6 +252,8 @@ namespace UnityVolumeRendering
                     workbench.DesktopCanOpenIntent, HelpAction);
                 SetWorkflowButtonState(fullMatrixButton,
                     workbench.DesktopCanBuildMatrix, ConfirmAction);
+                SetButtonText(fullMatrixButton,
+                    workbench.DesktopFullMatrixLabel);
                 bool canTransform = workbench.DesktopCanTransformMatrix;
                 SetWorkflowButtonState(pivotButton, canTransform, HelpAction);
                 SetWorkflowButtonState(drillButton, canTransform,

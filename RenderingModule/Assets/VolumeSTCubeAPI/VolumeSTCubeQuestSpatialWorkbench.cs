@@ -730,7 +730,20 @@ namespace UnityVolumeRendering
             {
                 return slabPreviewBuilt && intentConfigured &&
                     AreSpatialAxisBindingsComplete(out _) &&
-                    authorBoundaryConfirmed && !jobRunning;
+                    authorBoundaryConfirmed && !jobRunning &&
+                    !resumeMaterializationAfterManifest &&
+                    !datasetManifestResolving;
+            }
+        }
+
+        public string DesktopFullMatrixLabel
+        {
+            get
+            {
+                return resumeMaterializationAfterManifest ||
+                    datasetManifestResolving
+                        ? "PREPARING..."
+                        : jobRunning ? "MATERIALIZING..." : "FULL MATRIX";
             }
         }
 
@@ -6779,6 +6792,17 @@ namespace UnityVolumeRendering
                 BuildFacetGridPanel();
             }
             StartS4DGridJob();
+            if (VolumeSTCubeQuestBootstrap.IsFlatScreenEnabled &&
+                resumeMaterializationAfterManifest)
+            {
+                // Resolving dataset metadata is asynchronous. Move to the
+                // Matrix progress task immediately so FULL MATRIX never looks
+                // like an unresponsive click while that request is pending.
+                stage = Stage.Matrix;
+                ShowPrimaryTool(panelCanvas);
+                BuildStage();
+                VolumeSTCubeFlatScreenHUD.NotifyWorkflowChanged();
+            }
         }
 
         private void RetainCurrentResultBesideLiveGrid()
@@ -10470,10 +10494,13 @@ namespace UnityVolumeRendering
                 return;
             }
 
-            if (jobRunning && s4dGridImage == null)
+            if ((jobRunning || resumeMaterializationAfterManifest) &&
+                s4dGridImage == null)
             {
                 CreateText(panelContent,
-                    "Materializing immutable snapshot",
+                    resumeMaterializationAfterManifest
+                        ? "Preparing dataset for MatPlot"
+                        : "Materializing immutable snapshot",
                     21, FontStyle.Bold, new Vector2(0, 70), new Vector2(920, 34),
                     TextAnchor.MiddleCenter, Ink);
                 int progressColumns = Mathf.Clamp(activeGridColumns, 1,
@@ -10502,12 +10529,16 @@ namespace UnityVolumeRendering
                             (cellNumber + 1) / (float)cellCount <= progress
                                 ? Green : Amber);
                     }
-                CreateText(panelContent, Mathf.RoundToInt(progress * 100) + "%  /  " +
-                    MaterializationStageLabel(), 17, FontStyle.Bold,
+                CreateText(panelContent,
+                    resumeMaterializationAfterManifest
+                        ? "VALIDATING DATASET METADATA..."
+                        : Mathf.RoundToInt(progress * 100) + "%  /  " +
+                            MaterializationStageLabel(), 17, FontStyle.Bold,
                     new Vector2(0, -185), new Vector2(700, 30),
                     TextAnchor.MiddleCenter, Amber);
-                CreateButton(panelContent, "Cancel Job", new Vector2(0, -225),
-                    new Vector2(250, 42), Card, CancelS4DGridJob);
+                if (!resumeMaterializationAfterManifest)
+                    CreateButton(panelContent, "Cancel Job", new Vector2(0, -225),
+                        new Vector2(250, 42), Card, CancelS4DGridJob);
                 return;
             }
 
