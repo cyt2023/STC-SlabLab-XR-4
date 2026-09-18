@@ -34,12 +34,28 @@ GitHub Releases 发布打包好的 App。
 桌面版采用线性流程：选择数据集 → 配置变量和时间 → 定义 Slab → 查看矩阵 →
 生成图表 → 查看 findings。
 
-![Desktop configure field screen](docs/assets/screenshots/desktop-configure-field.png)
+### 1. 打开数据集
 
-时间播放和变量对比界面会保留中央 STC 可视化、右侧对比体、底部时间控件和顶部
+![Open dataset screen](docs/assets/screenshots/01-open-dataset.png)
+
+### 2. 配置时间范围
+
+![Configure time range screen](docs/assets/screenshots/02-configure-time-range.png)
+
+### 3. 定义 Slab 和变量
+
+![Define slab variables screen](docs/assets/screenshots/03-define-slab-variables.png)
+
+### 4. 设置分析任务
+
+![Analysis task screen](docs/assets/screenshots/04-analysis-task.png)
+
+### 5. 查看矩阵和 findings
+
+![Review matrix screen](docs/assets/screenshots/05-review-matrix.png)
+
+这些页面会保留中央 STC 可视化、右侧对比体、底部时间控件、变量选择、图表操作和
 History 入口，尽量避免文字重叠。
-
-![Desktop time playback screen](docs/assets/screenshots/desktop-time-playback.png)
 
 本项目在原始 [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube) Unity 体渲染项目上增加了低耦合的 API 集成层，同时保留原有 STC 导入器、渲染器、Shader、材质和交互控制。
 

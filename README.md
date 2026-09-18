@@ -40,13 +40,29 @@ The desktop app uses a linear workflow. Users move through dataset selection,
 field configuration, slab definition, matrix review, chart generation, and
 findings review.
 
-![Desktop configure field screen](docs/assets/screenshots/desktop-configure-field.png)
+### 1. Open a dataset
 
-The visualization page keeps the active space-time view, comparison volume, time
-controls, variable switcher, and history access visible without overlapping
-text-heavy panels.
+![Open dataset screen](docs/assets/screenshots/01-open-dataset.png)
 
-![Desktop time playback screen](docs/assets/screenshots/desktop-time-playback.png)
+### 2. Configure the time range
+
+![Configure time range screen](docs/assets/screenshots/02-configure-time-range.png)
+
+### 3. Define the slab and variables
+
+![Define slab variables screen](docs/assets/screenshots/03-define-slab-variables.png)
+
+### 4. Set the analysis task
+
+![Analysis task screen](docs/assets/screenshots/04-analysis-task.png)
+
+### 5. Review the matrix and findings
+
+![Review matrix screen](docs/assets/screenshots/05-review-matrix.png)
+
+The visualization pages keep the active space-time view, comparison volume,
+time controls, variable switcher, chart actions, and history access visible
+without overlapping text-heavy panels.
 
 ## What the App Does
 
