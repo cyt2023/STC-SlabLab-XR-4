@@ -14,9 +14,9 @@ https://github.com/cyt2023/STC-SlabLab-XR-4
 
 ## Download the Packaged App
 
-The current macOS review build is packaged here:
+The current macOS review build is published on GitHub Releases:
 
-[Download SlabLab-Review-macOS.zip](docs/downloads/SlabLab-Review-macOS.zip)
+[Download SlabLab-Review-macOS.zip](https://github.com/cyt2023/STC-SlabLab-XR-4/releases/download/v0.1.0-review-20260918/SlabLab-Review-macOS.zip)
 
 Local build artifact:
 
@@ -24,11 +24,15 @@ Local build artifact:
 RenderingModule/Builds/SlabLab-Review-macOS.zip
 ```
 
-For a public release, upload the same zip file to GitHub Releases and replace
-the relative link above with the release asset URL. The `RenderingModule/Builds`
-directory is intentionally ignored by Git because Unity builds can become large;
-the copy under `docs/downloads/` is included so this README has a working
-download link in the repository.
+The release page is:
+
+```text
+https://github.com/cyt2023/STC-SlabLab-XR-4/releases/tag/v0.1.0-review-20260918
+```
+
+The `RenderingModule/Builds` directory is intentionally ignored by Git because
+Unity builds can become large. Release builds should be distributed through
+GitHub Releases.
 
 ## Runtime Screenshots
 

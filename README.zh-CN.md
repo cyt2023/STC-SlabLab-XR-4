@@ -10,9 +10,9 @@ https://github.com/cyt2023/STC-SlabLab-XR-4
 
 ## 下载新版打包 App
 
-当前 macOS Review 版压缩包：
+当前 macOS Review 版压缩包已经放到 GitHub Releases：
 
-[下载 SlabLab-Review-macOS.zip](docs/downloads/SlabLab-Review-macOS.zip)
+[下载 SlabLab-Review-macOS.zip](https://github.com/cyt2023/STC-SlabLab-XR-4/releases/download/v0.1.0-review-20260918/SlabLab-Review-macOS.zip)
 
 本地构建产物路径：
 
@@ -20,10 +20,14 @@ https://github.com/cyt2023/STC-SlabLab-XR-4
 RenderingModule/Builds/SlabLab-Review-macOS.zip
 ```
 
-`RenderingModule/Builds` 是 Unity 构建输出目录，默认被 Git 忽略；为了让 GitHub
-README 里有可点击的下载入口，当前同一份压缩包也复制到了
-`docs/downloads/SlabLab-Review-macOS.zip`。正式发布时建议把这份 zip 上传到
-GitHub Releases，再把上面的链接替换成 Release Asset 地址。
+Release 页面：
+
+```text
+https://github.com/cyt2023/STC-SlabLab-XR-4/releases/tag/v0.1.0-review-20260918
+```
+
+`RenderingModule/Builds` 是 Unity 构建输出目录，默认被 Git 忽略。正式分发时应通过
+GitHub Releases 发布打包好的 App。
 
 ## 运行截图
 
