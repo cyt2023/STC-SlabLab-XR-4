@@ -2,6 +2,41 @@
 
 [English](README.md) | 中文
 
+当前最新版仓库：
+
+```text
+https://github.com/cyt2023/STC-SlabLab-XR-4
+```
+
+## 下载新版打包 App
+
+当前 macOS Review 版压缩包：
+
+[下载 SlabLab-Review-macOS.zip](docs/downloads/SlabLab-Review-macOS.zip)
+
+本地构建产物路径：
+
+```text
+RenderingModule/Builds/SlabLab-Review-macOS.zip
+```
+
+`RenderingModule/Builds` 是 Unity 构建输出目录，默认被 Git 忽略；为了让 GitHub
+README 里有可点击的下载入口，当前同一份压缩包也复制到了
+`docs/downloads/SlabLab-Review-macOS.zip`。正式发布时建议把这份 zip 上传到
+GitHub Releases，再把上面的链接替换成 Release Asset 地址。
+
+## 运行截图
+
+桌面版采用线性流程：选择数据集 → 配置变量和时间 → 定义 Slab → 查看矩阵 →
+生成图表 → 查看 findings。
+
+![Desktop configure field screen](docs/assets/screenshots/desktop-configure-field.png)
+
+时间播放和变量对比界面会保留中央 STC 可视化、右侧对比体、底部时间控件和顶部
+History 入口，尽量避免文字重叠。
+
+![Desktop time playback screen](docs/assets/screenshots/desktop-time-playback.png)
+
 本项目在原始 [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube) Unity 体渲染项目上增加了低耦合的 API 集成层，同时保留原有 STC 导入器、渲染器、Shader、材质和交互控制。
 
 当前仓库包含两个独立前端模式：Desktop 支持 Windows、macOS、Android 平板和 iPad；VR 支持 Quest/OpenXR。两种模式共用数据、渲染和分析核心，分别使用鼠标/触控与头显/Touch 控制器。模式切换、操作和一键构建方式见 [桌面 / VR 双模式说明](docs/FLAT_SCREEN.zh-CN.md)。
@@ -384,6 +419,37 @@ RAW 工厂       XYZ 时间序列状态与缓存
 - `XYZ+T` 的首次纹理生成仍需要时间；缓存目标是保持界面响应并平滑相邻切换，不是把全部数据常驻内存。
 - FastAPI 只返回数据描述，不负责生成图片或视频。
 - `CreateViewFromCsvRaw` 是 Unity 端快速网格预览，不等价于原 Python 克里金、裁剪和平滑流程。
+
+## 引用与上游项目
+
+本项目集成并扩展了以下工作：
+
+- [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube)：原始 Unity
+  volume-based space-time cube 体渲染项目，是本仓库的渲染基础。
+- Zikun Deng, Jiabao Huang, Chenxi Ruan, Jialing Li, Shaowu Gao, Yi Cai.
+  "Volume-Based Space-Time Cube for Large-Scale Continuous Spatial Time Series."
+  IEEE Transactions on Visualization and Computer Graphics, 2025.
+  DOI: [10.1109/TVCG.2025.3537115](https://doi.org/10.1109/TVCG.2025.3537115)，
+  arXiv: [2507.09917](https://arxiv.org/abs/2507.09917)。
+- [THUNLP/MatPlotAgent](https://github.com/thunlp/MatPlotAgent)：本仓库将其本地化为
+  Unity 后端图表生成服务。
+- Zhiyu Yang, Zihan Zhou, Shuo Wang, Xin Cong, Xu Han, Yukun Yan, Zhenghao Liu,
+  Zhixing Tan, Pengyuan Liu, Dong Yu, Zhiyuan Liu, Xiaodong Shi, Maosong Sun.
+  "MatPlotAgent: Method and Evaluation for LLM-Based Agentic Scientific Data
+  Visualization." arXiv: [2402.11453](https://arxiv.org/abs/2402.11453), 2024。
+
+MatPlotAgent 上游仓库提供的 BibTeX：
+
+```bibtex
+@misc{yang2024matplotagent,
+      title={MatPlotAgent: Method and Evaluation for LLM-Based Agentic Scientific Data Visualization},
+      author={Zhiyu Yang and Zihan Zhou and Shuo Wang and Xin Cong and Xu Han and Yukun Yan and Zhenghao Liu and Zhixing Tan and Pengyuan Liu and Dong Yu and Zhiyuan Liu and Xiaodong Shi and Maosong Sun},
+      year={2024},
+      eprint={2402.11453},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
 
 ## 进一步文档
 

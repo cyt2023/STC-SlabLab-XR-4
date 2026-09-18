@@ -1,35 +1,136 @@
-# STC SlabLab (Desktop / Tablet + VR)
+# STC SlabLab
 
-English | [中文](README.zh-CN.md)
+STC SlabLab is an interactive desktop and VR application for exploring
+spatiotemporal volume data. It combines a Unity space-time cube viewer, a local
+S4D analysis service, and a MatPlotAgent-based chart generator so a user can
+load a dataset, choose a time range and variables, generate Matplotlib views,
+and review model-assisted findings in one guided workflow.
 
-STC SlabLab now has two independent front-end modes backed by the same dataset, rendering, and analysis core. Desktop mode supports Windows, macOS, Android tablets, and iPad with mouse, keyboard, and touch gestures; VR mode supports Quest/OpenXR and Touch controllers. See the [Desktop / VR mode guide](docs/FLAT_SCREEN.zh-CN.md) for switching, controls, and builds.
+The latest working version of this project is maintained in:
 
-It builds on the original [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube) Unity project while preserving its importer, volume renderer, shaders, materials, and controls.
+```text
+https://github.com/cyt2023/STC-SlabLab-XR-4
+```
 
-It supports two data layouts through one loading workflow:
+## Download the Packaged App
 
-- `XY + time`: X/Y are geographic space and RAW Z stores time slices.
-- `XYZ + time`: each RAW file is a complete 3D volume and file order is time.
+The current macOS review build is packaged here:
 
-The default `Auto` mode distinguishes them from filenames and matching INI metadata.
+[Download SlabLab-Review-macOS.zip](docs/downloads/SlabLab-Review-macOS.zip)
 
-## Highlights
+Local build artifact:
 
-- Reuses the original STC renderer and interaction controls.
-- Automatically detects `XY+T` and `XYZ+T` collections.
-- Uses one timeline: Z-slice selection for XY+T and file switching for XYZ+T.
-- Keeps XYZ+T responsive with background loading, scrub debounce, and bounded prefetch.
-- Exposes C#, JSON, and FastAPI JSON Spec interfaces.
-- Returns actionable loading errors and manages view lifetime by `viewId`.
-- Leaves original STC rendering internals unchanged behind the integration layer.
+```text
+RenderingModule/Builds/SlabLab-Review-macOS.zip
+```
 
-## Requirements
+For a public release, upload the same zip file to GitHub Releases and replace
+the relative link above with the release asset URL. The `RenderingModule/Builds`
+directory is intentionally ignored by Git because Unity builds can become large;
+the copy under `docs/downloads/` is included so this README has a working
+download link in the repository.
 
-- Unity `2022.3 LTS` (`2022.3.62f3` is the current project version).
-- Windows is the primary tested platform.
-- Python 3.9 or newer is recommended for preprocessing and the server example.
+## Runtime Screenshots
 
-Open this directory from Unity Hub:
+The desktop app uses a linear workflow. Users move through dataset selection,
+field configuration, slab definition, matrix review, chart generation, and
+findings review.
+
+![Desktop configure field screen](docs/assets/screenshots/desktop-configure-field.png)
+
+The visualization page keeps the active space-time view, comparison volume, time
+controls, variable switcher, and history access visible without overlapping
+text-heavy panels.
+
+![Desktop time playback screen](docs/assets/screenshots/desktop-time-playback.png)
+
+## What the App Does
+
+- Loads RAW/INI spatiotemporal datasets through the Unity VolumeSTCube pipeline.
+- Supports both `XY + time` and `XYZ + time` layouts.
+- Shows a guided desktop flow for dataset import, field setup, time selection,
+  slab definition, matrix review, analysis, and findings.
+- Starts and uses local backend services for S4D analysis and MatPlotAgent chart
+  generation.
+- Produces Matplotlib chart grids from validated data contracts instead of
+  sending ambiguous free-form prompts.
+- Keeps analysis history in the current session so a user can inspect more than
+  one variable or result without losing previous charts.
+- Also keeps the Quest/OpenXR path for VR experiments.
+
+## Quick Start on macOS
+
+1. Download `SlabLab-Review-macOS.zip` from the link above.
+2. Unzip it and open `SlabLab-Review.app`.
+3. The app expects the local backend environment to be ready in this repository.
+   On the development machine, the backend has already been configured with:
+
+```text
+.venv/.stc-slablab-ready
+```
+
+The two local services are:
+
+```text
+MatPlotAgent API:       http://127.0.0.1:8010/health
+S4D Analysis Service:   http://127.0.0.1:8020/health
+```
+
+For a clean machine, configure the Python environment first:
+
+```bash
+./Start-Backend.sh
+```
+
+Additional setup notes are in [docs/BACKEND_SETUP.zh-CN.md](docs/BACKEND_SETUP.zh-CN.md).
+
+## User Workflow
+
+The desktop workflow is intentionally linear:
+
+```text
+Open Dataset
+→ Configure Field
+→ Define Slab
+→ Review Matrix
+→ Analyze
+→ Review Findings
+```
+
+The current design keeps the interface clear and visible: short button labels,
+large central visualization, a compact bottom action bar, and an analysis
+history button for returning to earlier results.
+
+## Architecture
+
+```text
+Unity Desktop / VR App
+        |
+        | dataset, time range, variable, analysis request
+        v
+S4D Analysis Service
+        |
+        | validated grid contract + numeric CSV package
+        v
+MatPlotAgent Local API
+        |
+        | generated Matplotlib chart + result metadata
+        v
+Unity chart panel and findings view
+```
+
+Important project paths:
+
+```text
+RenderingModule/                         Unity project
+RenderingModule/Assets/VolumeSTCubeAPI/  Desktop, VR, loading, and analysis UI
+Services/S4DAnalysisService/             Dataset validation and analysis API
+Services/MatPlotAgent/                   Localized MatPlotAgent runner/API
+datasets/                                Versioned demo dataset manifests
+docs/                                    Setup notes, release notes, screenshots
+```
+
+Open the Unity project from:
 
 ```text
 RenderingModule/
@@ -41,290 +142,92 @@ Main scene:
 RenderingModule/Assets/Scenes/mainScene.unity
 ```
 
-## Repository layout
+Unity version:
 
 ```text
-STC-SlabLab-XR/
-├── DataTransformationModule/       # Original XY+T Python preprocessing
-├── OneDrive_1_4-30-2026/           # Local Hong Kong XYZ+T test data, when present
-├── RenderingModule/                # Unity project
-│   └── Assets/VolumeSTCubeAPI/      # API and integration layer
-├── server_example/                 # FastAPI JSON Spec example
-├── docs/                           # API, test, and structure documentation
-├── README.md
-└── README.zh-CN.md
+2022.3.62f3
 ```
 
-## Data layouts
+## Building
 
-### XY + time
+From Unity, use the desktop build menu:
 
 ```text
-X/Y = geographic space
-RAW texture Z = time samples
-voxel = observed variable
+VolumeSTCube > Desktop > Build macOS Review
 ```
 
-`DataTransformationModule/UnityRawData` uses this layout. The current sample consists of eight `128 x 128 x 16` chunks, for 128 time samples in total.
-
-The timeline selects Z time slices while the spatial footprint remains aligned with the map.
-
-### XYZ + time
+The current review app is produced at:
 
 ```text
-X/Y/Z = 3D space
-ordered RAW files = time
-voxel = observed variable
+RenderingModule/Builds/SlabLab-Review.app
 ```
 
-The Hong Kong `chlorophyll`, `NO3`, and `salt` folders use this layout. The current datasets contain 30 time files of approximately `400 x 441 x 92` each.
+Package it as a zip with:
 
-Only the current volume and one adjacent prefetched dataset are retained. The loader does not place all 30 volumes in memory.
-
-### Automatic detection
-
-```csharp
-config.dataLayout = VolumeSTCubeDataLayout.Auto;
+```bash
+ditto -c -k --sequesterRsrc --keepParent \
+  RenderingModule/Builds/SlabLab-Review.app \
+  RenderingModule/Builds/SlabLab-Review-macOS.zip
 ```
 
-Multiple equally shaped 3D RAW files with an explicit numbered time token such as `_time_0_255` are detected as `XYZTimeSeries`. Original `timeWidth` chunk files remain `XYTime`.
-
-Override ambiguous third-party naming explicitly when necessary:
-
-```csharp
-config.dataLayout = VolumeSTCubeDataLayout.XYTime;
-// or
-config.dataLayout = VolumeSTCubeDataLayout.XYZTimeSeries;
-```
-
-## RAW/INI contract
-
-Each RAW file requires a matching `.raw.ini` file:
+The older full macOS package path is still available for the previous
+distribution workflow:
 
 ```text
-volume_salt_data_time_0_255.raw
-volume_salt_data_time_0_255.raw.ini
+RenderingModule/Builds/STC-SlabLab-macOS.zip
 ```
 
-Example metadata:
+## Validation Status
 
-```text
-dimx:400
-dimy:441
-dimz:92
-skip:0
-format:uint8
-endianness:littleendian
-```
+Recent release-prep checks include:
 
-Directory loading reads top-level files only. RAW/INI entries must pair one-to-one and are naturally sorted.
+- S4D backend robustness tests for invalid manifests, duplicate buckets,
+  ambiguous cell IDs, upload cleanup, and MatPlotAgent queue saturation.
+- Unity edit-mode validation for analysis history snapshot isolation.
+- macOS review build generation.
+- Local backend health checks for ports `8010` and `8020`.
 
-## Unity workflow
+The remaining manual QA item is a full click-through run on the target machine:
+dataset selection, time range, variable selection, chart generation, history
+reopen, and findings review.
 
-Open `mainScene.unity`, then use:
+## References and Upstream Projects
 
-```text
-Volume Rendering > Load dataset > Load RAW folder (auto XY+T or XYZ+T)
-```
+This repository integrates and extends the following work:
 
-- Select `DataTransformationModule/UnityRawData` for the original XY+T data.
-- Select a Hong Kong variable folder such as `OneDrive_1_4-30-2026/chlorophyll` for XYZ+T.
+- [VolumeSTCube](https://github.com/Kapo-Huang/VolumeSTCube), the original Unity
+  volume-based space-time cube project used as the rendering foundation.
+- Zikun Deng, Jiabao Huang, Chenxi Ruan, Jialing Li, Shaowu Gao, and Yi Cai.
+  "Volume-Based Space-Time Cube for Large-Scale Continuous Spatial Time Series."
+  IEEE Transactions on Visualization and Computer Graphics, 2025.
+  DOI: [10.1109/TVCG.2025.3537115](https://doi.org/10.1109/TVCG.2025.3537115);
+  arXiv: [2507.09917](https://arxiv.org/abs/2507.09917).
+- [THUNLP/MatPlotAgent](https://github.com/thunlp/MatPlotAgent), localized here
+  as the chart-generation backend.
+- Zhiyu Yang, Zihan Zhou, Shuo Wang, Xin Cong, Xu Han, Yukun Yan, Zhenghao Liu,
+  Zhixing Tan, Pengyuan Liu, Dong Yu, Zhiyuan Liu, Xiaodong Shi, and Maosong
+  Sun. "MatPlotAgent: Method and Evaluation for LLM-Based Agentic Scientific
+  Data Visualization." arXiv: [2402.11453](https://arxiv.org/abs/2402.11453),
+  2024.
 
-The other supported entries are:
+BibTeX for MatPlotAgent, copied from the upstream project:
 
-```text
-Volume Rendering > Load dataset > Preprocess CSV and load as XY+T
-Volume Rendering > Load dataset > Clear current dataset
-```
-
-After loading, enter Play Mode and use the bottom timeline. XYZ+T prepares the first texture, then prefetches an adjacent frame. Playback waits for an unavailable frame instead of blocking the Unity main thread. Scrubbing applies the final selection after roughly 0.12 seconds of inactivity.
-
-## C# API
-
-External scripts should depend on `UnityVolumeRendering.VolumeSTCubeAPI` only. Importers, runtime loaders, frame loaders, caches, and scene adapters are implementation details.
-
-### Recommended loading call
-
-```csharp
-using UnityVolumeRendering;
-
-VolumeSTCubeConfig config =
-    VolumeSTCubeConfig.Default("hong_kong_chlorophyll");
-
-config.dataLayout = VolumeSTCubeDataLayout.Auto;
-config.showTimeline = true;
-config.timelineAutoPlay = false;
-config.opacity = 0.8f;
-
-VolumeSTCubeView view = VolumeSTCubeAPI.CreateViewFromRawDirectory(
-    @"D:\data\chlorophyll",
-    config);
-```
-
-For a user-facing error message:
-
-```csharp
-bool loaded = VolumeSTCubeAPI.TryCreateViewFromRawDirectory(
-    @"D:\data\chlorophyll",
-    config,
-    out VolumeSTCubeView view,
-    out string error);
-
-if (!loaded)
-    statusText.text = error;
-```
-
-The API copies `VolumeSTCubeData` collections and `VolumeSTCubeConfig` at the call boundary. Internal ID normalization, layout detection, and timeline updates do not mutate caller-owned request objects.
-
-### View control and lifetime
-
-```csharp
-VolumeSTCubeAPI.ApplyTimeFilter("hong_kong_chlorophyll", 0.3f, 0.4f);
-VolumeSTCubeAPI.SetVisible("hong_kong_chlorophyll", false);
-
-VolumeSTCubeView view = VolumeSTCubeAPI.GetView("hong_kong_chlorophyll");
-view?.ApplyOpacity(0.65f);
-
-VolumeSTCubeAPI.DestroyView("hong_kong_chlorophyll");
-VolumeSTCubeAPI.ClearAll();
-```
-
-`viewId` is the registry key. Creating a view with the same ID replaces the registered view.
-
-## JSON API
-
-```csharp
-VolumeSTCubeView view = VolumeSTCubeAPI.CreateViewFromJson(json);
-```
-
-Example RAW series:
-
-```json
-{
-  "viewType": "VolumeSTCube",
-  "viewId": "hong_kong_salt",
-  "datasetName": "salt",
-  "dataMode": "rawFiles",
-  "rawFiles": ["D:/data/salt/time_0.raw", "D:/data/salt/time_1.raw"],
-  "iniFiles": ["D:/data/salt/time_0.raw.ini", "D:/data/salt/time_1.raw.ini"],
-  "render": {
-    "mode": "Volume",
-    "dataLayout": "Auto",
-    "showTimeline": true,
-    "timelineAutoPlay": false,
-    "timelinePlaybackSeconds": 10.0,
-    "opacity": 0.8
-  }
+```bibtex
+@misc{yang2024matplotagent,
+      title={MatPlotAgent: Method and Evaluation for LLM-Based Agentic Scientific Data Visualization},
+      author={Zhiyu Yang and Zihan Zhou and Shuo Wang and Xin Cong and Xu Han and Yukun Yan and Zhenghao Liu and Zhixing Tan and Pengyuan Liu and Dong Yu and Zhiyuan Liu and Xiaodong Shi and Maosong Sun},
+      year={2024},
+      eprint={2402.11453},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
 }
 ```
 
-Valid `dataLayout` strings are `Auto`, `XYTime`, and `XYZTimeSeries`.
+## More Documentation
 
-## FastAPI example
-
-```bash
-cd server_example
-pip install -r requirements.txt
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Endpoints:
-
-- `GET /api/volumestcube/example`
-- `POST /api/volumestcube/spec`
-- `GET /docs` for generated OpenAPI documentation
-
-Unity client:
-
-```csharp
-VolumeSTCubeServerClient client = GetComponent<VolumeSTCubeServerClient>();
-client.ViewLoaded += view => Debug.Log($"Loaded {view.viewId}");
-client.RequestFailed += error => statusText.text = error;
-client.LoadExampleFromServer();
-```
-
-The server prepares JSON specs; rendering remains inside Unity.
-
-## Architecture
-
-```text
-External C# / JSON / FastAPI
-             |
-      VolumeSTCubeAPI
-        /           \
-directory source   view registry
-        |
-    runtime loader
-      /         \
-RAW factory     XYZ time-series state/cache
-                       |
-                time-frame loader
-                       |
-          scene adapter + original STC renderer
-```
-
-- Layout detection decides dimension semantics only.
-- The RAW factory owns RAW/INI import and original STC object creation.
-- The time-series component owns indices, async work, and bounded cache policy.
-- The frame loader replaces one visible volume and restores render state.
-- The scene adapter owns map, camera, controller, and UI layout integration.
-- The registry owns view lookup and lifetime bookkeeping.
-
-## Original XY+T preprocessing
-
-`DataTransformationModule` retains the original path:
-
-```text
-point CSV
--> coordinate projection
--> kriging interpolation
--> China boundary clipping
--> spatial/temporal smoothing
--> uint8 normalization
--> RAW/INI export
--> Unity XY+T rendering
-```
-
-Main scripts:
-
-- `exampleData/0_exampleDataMerge.py`
-- `1_KrigingInterpolation.py`
-- `2_Smooth.py`
-
-Common Python dependencies include `geopandas`, `pykrige`, `pyproj`, `pandas`, `numpy`, and `tqdm`.
-
-## Validation
-
-The integration is checked with:
-
-- Unity runtime C# compilation.
-- Unity Editor C# compilation.
-- FastAPI/Pydantic schema and spec generation.
-- Original eight-file collection detection as XY+T.
-- Hong Kong 30-file collection detection as XYZ+T.
-
-Recommended manual check:
-
-1. Exit Play Mode.
-2. Open `mainScene.unity`.
-3. Load a directory through the unified menu.
-4. Confirm the Console has no red exceptions.
-5. Enter Play Mode and inspect the map, controls, and timeline.
-6. Repeat for one XY+T and one XYZ+T directory.
-
-## Known limitations
-
-- RAW/INI commonly omit geographic bounds and CRS metadata. Without those values, a third-party dataset cannot be guaranteed to align pixel-perfectly with the basemap.
-- The first XYZ+T texture still requires preparation time. Bounded caching targets responsive interaction without keeping every volume resident.
-- FastAPI does not render images or video.
-- `CreateViewFromCsvRaw` is a quick Unity grid preview, not the original Python kriging, clipping, and smoothing pipeline.
-
-## Documentation
-
-- [External API](docs/API_USAGE.md)
-- [API limitations](docs/API_LIMITATIONS.md)
-- [Test plan](docs/TEST_PLAN.md)
-- [Project structure](docs/PROJECT_STRUCTURE_SUMMARY.md)
-- [FastAPI example](server_example/README.md)
-
-Original data link: [Google Drive](https://drive.google.com/drive/folders/1YM0BodLTbHRy8Y4qby6m92QR1LFT0hOO?usp=sharing)
+- [Desktop / VR mode guide](docs/FLAT_SCREEN.zh-CN.md)
+- [Backend setup](docs/BACKEND_SETUP.zh-CN.md)
+- [S4D readiness notes](docs/release/READINESS.zh-CN.md)
+- [Desktop polish plan](docs/release/DESKTOP-POLISH-PLAN.zh-CN.md)
+- [S4D service README](Services/S4DAnalysisService/README.md)
+- [MatPlotAgent localization README](Services/MatPlotAgent/README.md)
