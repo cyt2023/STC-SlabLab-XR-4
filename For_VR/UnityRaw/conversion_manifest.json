@@ -22,6 +22,10 @@
     "faceCount": 13445,
     "coordinateFile": "GeoSurface/lon_lat_f32.bin",
     "faceFile": "GeoSurface/faces_u32.bin",
+    "nodeIdFile": "GeoSurface/node_ids_u32.bin",
+    "rasterValidFile": "GeoSurface/raster_valid_u8.bin",
+    "rasterVertexFile": "GeoSurface/raster_vertices_u32.bin",
+    "rasterWeightFile": "GeoSurface/raster_weights_f32.bin",
     "coordinateEncoding": "interleaved little-endian float32 longitude,latitude",
     "faceEncoding": "little-endian uint32 triplets"
   },

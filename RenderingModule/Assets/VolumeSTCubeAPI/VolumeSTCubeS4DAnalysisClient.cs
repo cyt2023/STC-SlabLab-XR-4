@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -238,12 +239,18 @@ namespace UnityVolumeRendering
             int dimY,
             int dimZ,
             int timeCount,
+            string sourceRoot,
+            string sourcePath,
             Action<S4DDatasetResolution, string> onComplete)
         {
             string path = "/datasets/resolve?variable=" +
                 UnityWebRequest.EscapeURL(variable ?? string.Empty) +
                 "&x=" + dimX + "&y=" + dimY + "&z=" + dimZ +
                 "&timeCount=" + timeCount;
+            if (!string.IsNullOrWhiteSpace(sourceRoot))
+                path += "&sourceRoot=" + UnityWebRequest.EscapeURL(NormalizePath(sourceRoot));
+            if (!string.IsNullOrWhiteSpace(sourcePath))
+                path += "&sourcePath=" + UnityWebRequest.EscapeURL(NormalizePath(sourcePath));
             using (UnityWebRequest webRequest = UnityWebRequest.Get(Api(path)))
             {
                 activeRequest = webRequest;
@@ -262,11 +269,34 @@ namespace UnityVolumeRendering
                     string.IsNullOrWhiteSpace(resolution.datasetId) ||
                     string.IsNullOrWhiteSpace(resolution.variableId))
                 {
+                    // Carry a slice of the raw answer: "invalid response" alone
+                    // gives the operator nothing to act on.
+                    string body = webRequest.downloadHandler != null
+                        ? webRequest.downloadHandler.text
+                        : string.Empty;
                     onComplete?.Invoke(null,
-                        "Dataset service returned an invalid manifest match.");
+                        "Dataset service returned an invalid manifest match." +
+                        (string.IsNullOrWhiteSpace(body)
+                            ? string.Empty
+                            : "  Response: " + body.Substring(
+                                0, Mathf.Min(180, body.Length))));
                     yield break;
                 }
                 onComplete?.Invoke(resolution, null);
+            }
+        }
+
+        private static string NormalizePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return string.Empty;
+            try
+            {
+                return Path.GetFullPath(path).Replace('\\', '/');
+            }
+            catch (Exception)
+            {
+                return path.Replace('\\', '/');
             }
         }
 
@@ -814,9 +844,46 @@ namespace UnityVolumeRendering
 
         private static string RequestError(UnityWebRequest request)
         {
+            if (request.responseCode == 0 &&
+                !string.IsNullOrWhiteSpace(request.error) &&
+                (request.error.IndexOf("connect", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 request.error.IndexOf("destination host", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                // The packaged app launches the backend once at startup; bring
+                // it back if it died while the session was running.
+                VolumeSTCubePackagedBackendLauncher.EnsureRunning();
+                return "The local analysis backend is offline. Keep the app open while it starts. " +
+                    "If this is the first launch, run Setup Backend.command once, then reopen SlabLab.";
+            }
             string body = request.downloadHandler != null
                 ? request.downloadHandler.text
                 : string.Empty;
+            // The service answers with {"detail": "..."}. Showing the raw JSON
+            // leaves the operator with an unreadable wall of text, so surface
+            // the sentence plus what to do about it.
+            if (SlabLabServiceError.TryDetail(body, out string detail))
+            {
+                switch (request.responseCode)
+                {
+                    case 404:
+                        return "The analysis service does not know this dataset. " +
+                            detail + "  Reload the variable, then retry.";
+                    case 409:
+                        return "Two datasets match this variable. " + detail +
+                            "  Re-import so only one copy remains, then retry.";
+                    case 422:
+                        return "The Grid was rejected: " + detail;
+                    case 500:
+                    case 502:
+                    case 503:
+                    case 504:
+                        return "The analysis service is not ready: " + detail +
+                            "  It will retry automatically; press Retry in a moment.";
+                    default:
+                        return "Analysis service error " + request.responseCode +
+                            ": " + detail;
+                }
+            }
             return string.IsNullOrWhiteSpace(body)
                 ? request.error
                 : request.error + " | " + body;

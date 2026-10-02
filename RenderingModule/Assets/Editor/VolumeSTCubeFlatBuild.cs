@@ -27,6 +27,13 @@ namespace UnityVolumeRendering.EditorTools
                 "SlabLab-Flat.app");
         }
 
+        [MenuItem("VolumeSTCube/Desktop/Build macOS Review")]
+        public static void BuildMacOSReview()
+        {
+            Build(BuildTarget.StandaloneOSX, BuildTargetGroup.Standalone,
+                "SlabLab-Review.app");
+        }
+
         [MenuItem("VolumeSTCube/Desktop/Build Windows 64-bit")]
         public static void BuildWindows()
         {

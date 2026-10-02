@@ -11,12 +11,6 @@ if [[ ! -f "$package_root/.venv/.stc-slablab-ready" ]]; then
   exit 1
 fi
 
-if [[ -f "$package_root/.env" ]]; then
-  set -a
-  source "$package_root/.env"
-  set +a
-fi
-
 "$package_root/Start-Backend.sh"
 open "$package_root/STC SlabLab.app"
 

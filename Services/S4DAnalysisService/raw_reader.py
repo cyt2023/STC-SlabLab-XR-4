@@ -219,22 +219,23 @@ class RawVolumeReader:
                     )
                 )
 
-        finite = np.concatenate(
-            [cell.values[np.isfinite(cell.values)] for cell in cells]
-        )
-        if finite.size == 0:
+        # Reduce one cell at a time: do not duplicate the full grid in memory.
+        extrema = [(float(values.min()), float(values.max()))
+                   for cell in cells
+                   if (values := cell.values[np.isfinite(cell.values)]).size]
+        if not extrema:
             raise ValueError("the requested grid contains no valid values")
         return GridNumericResult(
             cells=tuple(cells),
             shared_minimum=(
                 request.sharedScaleMinimum
                 if request.hasSharedScaleOverride
-                else float(finite.min())
+                else min(low for low, _ in extrema)
             ),
             shared_maximum=(
                 request.sharedScaleMaximum
                 if request.hasSharedScaleOverride
-                else float(finite.max())
+                else max(high for _, high in extrema)
             ),
             unit=next(iter(units)) if len(units) == 1 else "mixed units",
             coordinate_reference=self.manifest.coordinates.coordinateReference,

@@ -19,6 +19,20 @@ namespace VolumeSTCubeQuest.EditorTools
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
+        /// <summary>
+        /// Go back to the built-in Wave gateway after a diagnostic pointed the
+        /// workspace somewhere else. The override is sticky and the running
+        /// editor caches it, so clearing the preference file by hand is not
+        /// enough — this clears it in the process that actually reads it.
+        /// </summary>
+        [MenuItem("VolumeSTCube/Desktop/Reset Wave URL Override", priority = 43)]
+        private static void ResetWaveUrlOverride()
+        {
+            SlabLabSettings.ClearWaveUrl();
+            Debug.Log("Wave URL override cleared; the workspace will use its " +
+                "built-in gateway again on the next Play Mode.");
+        }
+
         private static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
             if (state != PlayModeStateChange.EnteredPlayMode ||

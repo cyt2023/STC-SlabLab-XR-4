@@ -27,6 +27,7 @@ def build_spatial_mapping(first_file: Path):
         lon = handle["lon"][:]
         lat = handle["lat"][:]
         faces = handle["faces_0based"][:].astype(np.int64)
+        node_ids = handle["node_indices_original_1based"][:].astype(np.uint32)
 
     grid_lon = np.linspace(float(lon.min()), float(lon.max()), GRID_X)
     grid_lat = np.linspace(float(lat.min()), float(lat.max()), GRID_Y)
@@ -49,7 +50,7 @@ def build_spatial_mapping(first_file: Path):
     weights[valid, 0] = w1
     weights[valid, 1] = w2
     weights[valid, 2] = 1.0 - w1 - w2
-    return lon, lat, valid, vertices, weights
+    return lon, lat, node_ids, valid, vertices, weights
 
 
 def value_range(files: list[Path], dataset_key: str, channel_index: int) -> tuple[float, float]:
@@ -74,7 +75,7 @@ def encode_frame(values, valid, vertices, weights, minimum, maximum) -> np.ndarr
 
 def main() -> None:
     first_file = source_files("Prediction")[0]
-    lon, lat, valid, vertices, weights = build_spatial_mapping(first_file)
+    lon, lat, node_ids, valid, vertices, weights = build_spatial_mapping(first_file)
     manifest = {
         "schemaVersion": "1.0",
         "source": "For_VR HDF5",
@@ -93,6 +94,10 @@ def main() -> None:
             "faceCount": 0,
             "coordinateFile": "GeoSurface/lon_lat_f32.bin",
             "faceFile": "GeoSurface/faces_u32.bin",
+            "nodeIdFile": "GeoSurface/node_ids_u32.bin",
+            "rasterValidFile": "GeoSurface/raster_valid_u8.bin",
+            "rasterVertexFile": "GeoSurface/raster_vertices_u32.bin",
+            "rasterWeightFile": "GeoSurface/raster_weights_f32.bin",
             "coordinateEncoding": "interleaved little-endian float32 longitude,latitude",
             "faceEncoding": "little-endian uint32 triplets",
         },
@@ -106,6 +111,12 @@ def main() -> None:
     np.column_stack((lon, lat)).astype("<f4").tofile(
         geographic_root / "lon_lat_f32.bin")
     faces.tofile(geographic_root / "faces_u32.bin")
+    node_ids.astype("<u4").tofile(geographic_root / "node_ids_u32.bin")
+    valid.astype(np.uint8).tofile(geographic_root / "raster_valid_u8.bin")
+    vertices.astype("<u4").tofile(
+        geographic_root / "raster_vertices_u32.bin")
+    weights.astype("<f4").tofile(
+        geographic_root / "raster_weights_f32.bin")
     s4d_variables = {}
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 

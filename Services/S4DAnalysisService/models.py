@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Literal
@@ -103,6 +104,10 @@ class VariableSeries(BaseModel):
 
     @model_validator(mode="after")
     def validate_frames(self) -> "VariableSeries":
+        if not self.frames:
+            raise ValueError("each variable requires at least one frame")
+        if not math.isfinite(self.scale) or not math.isfinite(self.offset):
+            raise ValueError("scale and offset must be finite")
         indices = [frame.timeIndex for frame in self.frames]
         if len(indices) != len(set(indices)):
             raise ValueError("frame timeIndex values must be unique")
@@ -137,6 +142,8 @@ class VolumeManifest(BaseModel):
 
     @model_validator(mode="after")
     def validate_manifest(self) -> "VolumeManifest":
+        if not self.variables:
+            raise ValueError("dataset requires at least one variable")
         expected = self.dimensions.x * self.dimensions.y * self.dimensions.z
         for variable_id, variable in self.variables.items():
             for frame in variable.frames:
@@ -209,6 +216,15 @@ class FacetGridRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_dimension_roles(self) -> "FacetGridRequest":
+        for buckets in (self.timeBuckets, self.depthBuckets):
+            ids = [bucket.id for bucket in buckets]
+            if len(ids) != len(set(ids)):
+                raise ValueError("bucket IDs must be unique within each axis")
+        cell_ids = [f"{t.id}__{d.id}" for t in self.timeBuckets for d in self.depthBuckets]
+        if len(cell_ids) != len(set(cell_ids)):
+            raise ValueError("bucket IDs produce ambiguous cell IDs")
+        if not math.isfinite(self.sharedScaleMinimum) or not math.isfinite(self.sharedScaleMaximum):
+            raise ValueError("shared scale limits must be finite")
         names = [assignment.dimension for assignment in self.dimensionRoles]
         if len(names) != len(set(names)):
             raise ValueError("dimensionRoles contains duplicate dimensions")
@@ -274,3 +290,7 @@ class ManifestValidationReport(BaseModel):
     checkedFiles: int = 0
     errors: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
+
+
+class ValidationRequest(BaseModel):
+    verifyHashes: bool = False

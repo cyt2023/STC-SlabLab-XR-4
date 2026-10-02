@@ -66,8 +66,8 @@ namespace UnityVolumeRendering
             if (!initialized)
                 return;
             font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            prompt = PlayerPrefs.GetString("VolumeSTCube.Quest.Prompt", prompt);
-            matPlotUrl = PlayerPrefs.GetString("VolumeSTCube.Quest.MatPlotUrl", matPlotUrl);
+            prompt = SlabLabSettings.GetQuestPrompt(prompt);
+            matPlotUrl = SlabLabSettings.GetMatPlotUrl(matPlotUrl);
             CreateCanvas();
             RefreshDatasets();
         }
@@ -94,10 +94,10 @@ namespace UnityVolumeRendering
                 return;
 
             if (editingUrl)
-                PlayerPrefs.SetString("VolumeSTCube.Quest.MatPlotUrl", matPlotUrl);
+                SlabLabSettings.SetMatPlotUrl(matPlotUrl);
             else
-                PlayerPrefs.SetString("VolumeSTCube.Quest.Prompt", prompt);
-            PlayerPrefs.Save();
+                SlabLabSettings.SetQuestPrompt(prompt);
+            SlabLabSettings.Save();
             keyboard = null;
             BuildCurrentStage();
         }

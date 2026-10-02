@@ -1,0 +1,13 @@
+{
+  "datasetId": "wave_live_20191130T0000Z_20191201T0000Z_hs_elev",
+  "start": "2019-11-30T00:00:00Z",
+  "end": "2019-12-01T00:00:00Z",
+  "fields": [
+    "hs",
+    "elev"
+  ],
+  "hours": 24,
+  "datasetVersion": "2026-09-23T10:57:57Z",
+  "createdAt": "2026-09-23T22:30:59Z",
+  "bytes": 2866166
+}

@@ -1,0 +1,458 @@
+{
+  "schemaVersion": "1.0",
+  "datasetId": "wave_live_20191130T0000Z_20191201T0000Z_hs_elev",
+  "datasetVersion": "2026-09-23T10:57:57Z",
+  "dimensions": {
+    "x": 96,
+    "y": 64,
+    "z": 4
+  },
+  "storageOrder": "ZYX",
+  "defaultVoxelType": "uint8",
+  "coordinates": {
+    "coordinateReference": "EPSG:4326",
+    "renderProjection": "WebMercator",
+    "x": {
+      "kind": "regular_geographic_grid",
+      "axis": "longitude",
+      "unit": "degree_east",
+      "start": 113.65021999999999,
+      "step": 0.010629199999999927
+    },
+    "y": {
+      "kind": "regular_geographic_grid",
+      "axis": "latitude",
+      "unit": "degree_north",
+      "start": 22.0300455,
+      "step": 0.010631244444444483
+    },
+    "depth": {
+      "kind": "ordinal_index",
+      "unit": "display_extrusion_layer",
+      "start": 0,
+      "step": 1,
+      "positive": "down",
+      "excludedIndices": []
+    }
+  },
+  "variables": {
+    "Wave_HS": {
+      "displayName": "Wave_HS",
+      "unit": "source unit (unverified)",
+      "valueSemantics": "physical",
+      "voxelType": "uint8",
+      "scale": 0.01968503937007874,
+      "offset": -0.01968503937007874,
+      "missingRawValues": [
+        0
+      ],
+      "frames": [
+        {
+          "frameId": "Wave_HS_t0000",
+          "timeIndex": 0,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0000.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0001",
+          "timeIndex": 1,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0001.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0002",
+          "timeIndex": 2,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0002.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0003",
+          "timeIndex": 3,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0003.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0004",
+          "timeIndex": 4,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0004.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0005",
+          "timeIndex": 5,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0005.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0006",
+          "timeIndex": 6,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0006.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0007",
+          "timeIndex": 7,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0007.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0008",
+          "timeIndex": 8,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0008.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0009",
+          "timeIndex": 9,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0009.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0010",
+          "timeIndex": 10,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0010.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0011",
+          "timeIndex": 11,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0011.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0012",
+          "timeIndex": 12,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0012.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0013",
+          "timeIndex": 13,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0013.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0014",
+          "timeIndex": 14,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0014.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0015",
+          "timeIndex": 15,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0015.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0016",
+          "timeIndex": 16,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0016.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0017",
+          "timeIndex": 17,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0017.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0018",
+          "timeIndex": 18,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0018.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0019",
+          "timeIndex": 19,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0019.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0020",
+          "timeIndex": 20,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0020.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0021",
+          "timeIndex": 21,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0021.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0022",
+          "timeIndex": 22,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0022.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_HS_t0023",
+          "timeIndex": 23,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_HS/event_01_time_0023.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        }
+      ]
+    },
+    "Wave_Water_Level": {
+      "displayName": "Wave_Water_Level",
+      "unit": "source unit (unverified)",
+      "valueSemantics": "physical",
+      "voxelType": "uint8",
+      "scale": 0.023622047244094488,
+      "offset": -3.0236220472440944,
+      "missingRawValues": [
+        0
+      ],
+      "frames": [
+        {
+          "frameId": "Wave_Water_Level_t0000",
+          "timeIndex": 0,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0000.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0001",
+          "timeIndex": 1,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0001.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0002",
+          "timeIndex": 2,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0002.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0003",
+          "timeIndex": 3,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0003.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0004",
+          "timeIndex": 4,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0004.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0005",
+          "timeIndex": 5,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0005.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0006",
+          "timeIndex": 6,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0006.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0007",
+          "timeIndex": 7,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0007.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0008",
+          "timeIndex": 8,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0008.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0009",
+          "timeIndex": 9,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0009.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0010",
+          "timeIndex": 10,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0010.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0011",
+          "timeIndex": 11,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0011.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0012",
+          "timeIndex": 12,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0012.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0013",
+          "timeIndex": 13,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0013.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0014",
+          "timeIndex": 14,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0014.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0015",
+          "timeIndex": 15,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0015.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0016",
+          "timeIndex": 16,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0016.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0017",
+          "timeIndex": 17,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0017.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0018",
+          "timeIndex": 18,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0018.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0019",
+          "timeIndex": 19,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0019.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0020",
+          "timeIndex": 20,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0020.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0021",
+          "timeIndex": 21,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0021.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0022",
+          "timeIndex": 22,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0022.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        },
+        {
+          "frameId": "Wave_Water_Level_t0023",
+          "timeIndex": 23,
+          "temporalMeaning": "instantaneous",
+          "path": "UnityRaw/Wave_Water_Level/event_01_time_0023.raw",
+          "expectedBytes": 24576,
+          "sha256": null
+        }
+      ]
+    }
+  },
+  "assumptions": [
+    {
+      "id": "live-wave-source",
+      "statement": "Frames are fetched from the Wave API only when displayed.",
+      "evidence": "The Unity surface requests 100-node patches with at most three concurrent calls.",
+      "status": "measured"
+    }
+  ]
+}

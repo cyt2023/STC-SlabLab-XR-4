@@ -20,7 +20,8 @@ from Services.S4DAnalysisService.matplot_contract import (
 )
 from Services.S4DAnalysisService.digest import build_deterministic_digest
 from Services.S4DAnalysisService.models import FacetGridRequest, VolumeManifest
-from Services.S4DAnalysisService.app import _compose_cell_atlas, resolve_intent_text
+from Services.S4DAnalysisService.intent import resolve_intent_text
+from Services.S4DAnalysisService.routers.jobs import _compose_cell_atlas
 from Services.S4DAnalysisService.models import IntentResolutionRequest
 from Services.S4DAnalysisService.raw_reader import (
     RawVolumeReader,

@@ -198,7 +198,9 @@ namespace UnityVolumeRendering
         private static string RequestError(UnityWebRequest request)
         {
             string body = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
-            return string.IsNullOrWhiteSpace(body) ? request.error : request.error + " | " + body;
+            // Same rule as the other two clients: show what the service said,
+            // not the JSON that carries it.
+            return SlabLabServiceError.Detail(body, request.error);
         }
 
         private static void CompleteError(string error, Action<VolumeSTCubeMatPlotResult> onComplete)

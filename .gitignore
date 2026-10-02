@@ -12,10 +12,12 @@
 
 # Python caches
 /.venv/
+.env
 **/__pycache__/
 *.py[cod]
 
 # Workspace and editor caches
+**/.DS_Store
 **/.vs/
 **/Library/
 **/Temp/

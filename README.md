@@ -96,6 +96,22 @@ MatPlotAgent API:       http://127.0.0.1:8010/health
 S4D Analysis Service:   http://127.0.0.1:8020/health
 ```
 
+### Wave server data
+
+The dataset screen can open a live 24-hour `hs` and `elev` timeline from the
+private Wave API. Field values are not pre-downloaded: selecting a variable and
+hour requests only that visible frame, and each 100-node response patch is drawn
+as soon as it arrives. Completed frames are cached locally. Keep Tailscale
+connected, copy `.env.example` to `.env`, and set the personal `WAVE_API_KEY`
+before starting the backend. The key stays in the local Python service and is
+not embedded in the Unity project or app build.
+
+The opening screen defaults to `2019-11-30T00:00:00Z` through
+`2019-12-01T00:00:00Z`. These values can be changed before launch through the
+Unity PlayerPrefs keys `VolumeSTCube.Wave.StartUtc` and
+`VolumeSTCube.Wave.EndUtc`. One import is limited to 31 days; requests are
+automatically split to respect the server's node and row limits.
+
 For a clean machine, configure the Python environment first:
 
 ```bash
@@ -150,6 +166,46 @@ datasets/                                Versioned demo dataset manifests
 docs/                                    Setup notes, release notes, screenshots
 ```
 
+### Inside `Assets/VolumeSTCubeAPI/`
+
+The desktop/VR workspace is one partial class spread over 23 files, named by the
+concern each one owns:
+
+| File | Owns |
+|---|---|
+| `VolumeSTCubeQuestSpatialWorkbench.cs` | Unity lifecycle, unchanged field declarations and public state |
+| `…Workflow.cs` | step navigation, restart and workspace transitions |
+| `…Panels.cs` | shared panel construction and stage presentation |
+| `…Dataset.cs` | Wave registration, manifests, variable loading |
+| `…Boundary.cs` | time/depth boundaries and the typed Time range |
+| `…DesktopLayout.cs` | desktop framing, focus views, Reset view |
+| `…Interaction.cs` | shortcut entry point and remaining input actions |
+| `…Speech.cs` | keyboard, microphone, transcription and native Quest speech |
+| `…Field.cs` | field visibility, depth inspection, animation and Ground evidence |
+| `…Timeline.cs` | playback and time markers |
+| `…AxisComposer.cs` | the tri-axis composer of Step 3 |
+| `…Analysis.cs` | intent resolution, S4D / MatPlot requests and job callbacks |
+| `…Matrix.cs` | facet grid presentation, selection, progress and placement |
+| `…Draft.cs` | pivot, drill, roll-up and source-preview authoring |
+| `…Buckets.cs` | index ranges, bucket copying, splitting and merging |
+| `…History.cs` | analysis nodes, retained results, pinning and trail |
+| `…Findings.cs` | digest summaries, statistics and findings presentation |
+| `…Jobs.cs`, `…Phase.cs`, `…State.cs` | pending-job bookkeeping, the read-only `Phase` view, the grouped state structs |
+| `…Chrome.cs`, `…Palette.cs`, `…Quest.cs` | drawing helpers and typography, the variable palette, VR/Quest specifics |
+
+Small single-purpose helpers sit beside it: `SlabLabShortcuts` (key table),
+`SlabLabHints` (hover texts), `SlabLabSnapshot` (export), `SlabLabBoundaryEntry`
+(typed range), `SlabLabLayout` (pinned layout numbers) and `SlabLabSettings`
+(persisted keys).
+
+This split preserves member bodies, field initialization order, the Unity script
+GUID and runtime contracts. Verification and the remaining device-only checks
+are recorded in [docs/REFACTOR-VERIFICATION.zh-CN.md](docs/REFACTOR-VERIFICATION.zh-CN.md).
+
+Guards live in `Assets/Editor/`, and the process that runs them — with the
+allow-list for interaction changes — is in
+[docs/INTERACTION-GUARDRAILS.md](docs/INTERACTION-GUARDRAILS.md).
+
 Open the Unity project from:
 
 ```text
@@ -199,11 +255,43 @@ RenderingModule/Builds/STC-SlabLab-macOS.zip
 
 ## Validation Status
 
+Run everything with one command:
+
+```bash
+./tools/release-check.sh            # contracts + backend tests + Unity guards
+./tools/release-check.sh --package  # also verify the macOS delivery is current
+./tools/release-check.sh --stall    # also prove the 45 s stall window (needs 45 s)
+./tools/release-check.sh --vr       # also run the Quest/VR branch
+```
+
+It drives the Unity guards through the open editor's own menu item (or in batch
+mode when the editor is closed) and writes `.runtime/test-results/release-check.txt`.
+With `--package` it also refuses a delivery whose shipped interface is older than
+the code. The frozen contracts and the allow-list for interaction changes are in
+[docs/INTERACTION-GUARDRAILS.md](docs/INTERACTION-GUARDRAILS.md).
+
 Recent release-prep checks include:
 
 - S4D backend robustness tests for invalid manifests, duplicate buckets,
   ambiguous cell IDs, upload cleanup, and MatPlotAgent queue saturation.
+- Both halves of the hybrid Wave source have been exercised against the packaged
+  service: a bundled window answers `source: cache` with no network, and an
+  **unbundled** window registers through the tailnet gateway as `source: live`
+  and serves real values on demand (`0.107`, `0.128`, `0.142` for three nodes) —
+  which is what the opening screen's `DATA SOURCE · LIVE` line reports.
 - Unity edit-mode validation for analysis history snapshot isolation.
+- Interaction baseline in Play Mode: recorded Field-pair/tri-axis bounds, phase,
+  pending jobs, timing budgets, the Step 1 data-source line, the typed Time
+  range, the Reset-view recovery probe, and the Snapshot export.
+- Cold start of the shipped bundle: the app starts its own backend and
+  `WatchWaveImport` recovers from the first-registration race without the
+  operator pressing RETRY.
+- The packaged tooling that ships beside the app has been exercised by hand:
+  `Setup Backend.command` (a real dependency install), `Start STC
+  SlabLab.command`, `Stop Backend.command` (stops both services by PID and frees
+  both ports), and `Prepare Offline Data.command` (idempotent when the window is
+  already bundled — it answers from the cache, rewrites only `bundle.json`, and
+  the packaged app still opens offline with real values afterwards).
 - macOS review build generation.
 - Local backend health checks for ports `8010` and `8020`.
 
@@ -246,6 +334,9 @@ BibTeX for MatPlotAgent, copied from the upstream project:
 ## More Documentation
 
 - [Desktop / VR mode guide](docs/FLAT_SCREEN.zh-CN.md)
+- [Quest headset checklist](docs/QUEST-HEADSET-CHECKLIST.md)
+- [Interaction guardrails](docs/INTERACTION-GUARDRAILS.md)
+- [Open decisions](docs/OPEN-DECISIONS.md)
 - [Backend setup](docs/BACKEND_SETUP.zh-CN.md)
 - [S4D readiness notes](docs/release/READINESS.zh-CN.md)
 - [Desktop polish plan](docs/release/DESKTOP-POLISH-PLAN.zh-CN.md)

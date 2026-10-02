@@ -510,17 +510,50 @@ namespace UnityVolumeRendering
             // Field and its authored boundary planes. Field fitting is controlled by
             // VolumeSTCubeQuestSpatialWorkbench.FrameVolume instead.
 
-            if (Input.GetKeyDown(KeyCode.X))
-            {
-                transform.SetPositionAndRotation(initialPosition, initialRotation);
-                head.localEulerAngles = initialHeadEuler;
-                VolumeSTCubeQuestSpatialWorkbench spatialWorkbench = FindObjectOfType<VolumeSTCubeQuestSpatialWorkbench>();
-                if (spatialWorkbench != null)
-                    spatialWorkbench.ResetVolumeLayout();
-            }
+            if (ShortcutPressed(SlabLabShortcut.ResetView))
+                ResetDesktopView();
 
-            if (Input.GetKeyDown(KeyCode.Y))
+            if (ShortcutPressed(SlabLabShortcut.ToggleSlabFrame))
                 ToggleSlabFrameRequested?.Invoke();
+        }
+
+        /// <summary>
+        /// Restore the authored viewpoint and the authored two-Field framing.
+        /// This is the "X: reset view" shortcut: after a stray right-drag, a
+        /// wheel run or a focus move the operator can always bring the
+        /// composition back instead of restarting the session. Public so the
+        /// Play-mode guard can drive exactly the path the key drives.
+        /// </summary>
+        public void ResetDesktopView()
+        {
+            transform.SetPositionAndRotation(initialPosition, initialRotation);
+            if (head != null)
+                head.localEulerAngles = initialHeadEuler;
+            VolumeSTCubeQuestSpatialWorkbench spatialWorkbench =
+                FindObjectOfType<VolumeSTCubeQuestSpatialWorkbench>();
+            if (spatialWorkbench == null)
+                return;
+            spatialWorkbench.ResetVolumeLayout();
+            // ResetVolumeLayout re-fits the volume inside its Field. The Field
+            // pair itself is re-centred from the authored pose, so a previous
+            // focus move cannot leave the composition off screen either.
+            spatialWorkbench.DesktopRecentreField();
+        }
+
+        /// <summary>
+        /// Reads the shared shortcut table instead of a hard-coded key, so the
+        /// keys the Help card advertises and the keys handled here cannot drift
+        /// apart (see VolumeSTCubeShortcutTests and tools/check_contracts.py).
+        /// </summary>
+        private static bool ShortcutPressed(SlabLabShortcut wanted)
+        {
+            for (int index = 0; index < SlabLabShortcuts.Keys.Length; index++)
+            {
+                KeyCode key = SlabLabShortcuts.Keys[index];
+                if (SlabLabShortcuts.Map(key) == wanted && Input.GetKeyDown(key))
+                    return true;
+            }
+            return false;
         }
 
         private void RotateView(float yawDelta, float pitchDelta)

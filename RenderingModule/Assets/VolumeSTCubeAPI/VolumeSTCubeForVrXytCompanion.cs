@@ -57,6 +57,7 @@ namespace UnityVolumeRendering
             public string name;
             public string channel;
             public string unit;
+            public bool liveWave;
             public float physicalMinimum;
             public float physicalMaximum;
             public string geographicValuesFile;
@@ -142,6 +143,7 @@ namespace UnityVolumeRendering
         private readonly int[] combinedTimeCuts = new int[2];
         private int activeCombinedTimeCut;
         private bool initialized;
+        private bool singleLiveSource;
         private bool spotlightDragging;
         private int provenanceFirstFrame = -1;
         private int provenanceLastFrame = -1;
@@ -183,11 +185,31 @@ namespace UnityVolumeRendering
                 enabled = false;
                 return;
             }
+            if (singleLiveSource)
+                drillDown = true;
             DiscoverEvents();
             BuildVisualRoot();
             BuildControls();
             ShowFrame(0);
             initialized = true;
+        }
+
+        public void RefreshLiveData(int frameIndex)
+        {
+            if (!singleLiveSource || source == null || source.TimeCount == 0)
+                return;
+            currentFrame = Mathf.Clamp(frameIndex, 0, source.TimeCount - 1);
+            currentEventIndex = FindEventIndex(currentFrame);
+            RebuildEventCubes();
+            UpdateSelectionOverlay();
+            UpdateLabels();
+        }
+
+        public int[] GetLivePriorityNodeIndices()
+        {
+            return singleLiveSource && projectedNodes != null
+                ? SelectedNodes().ToArray()
+                : new int[0];
         }
 
         public void ShowFrame(int frameIndex)
@@ -232,12 +254,47 @@ namespace UnityVolumeRendering
             currentFrame = combinedTimeCuts[activeCombinedTimeCut];
             currentEventIndex = FindEventIndex(currentFrame);
             if (allEventsButtonText != null)
-                allEventsButtonText.text = "ONE EVENT";
+                allEventsButtonText.text = singleLiveSource
+                    ? "LIVE VIEW" : "ONE EVENT";
             if (modeButtonText != null)
                 modeButtonText.text = "DRILL DOWN";
             RebuildEventCubes();
             UpdateCombinedTimeSelector();
             UpdateSelectedSlicePreview(true);
+            UpdateLabels();
+            UpdateSelectionOverlay();
+        }
+
+        public void SetCombinedTimeRange(int firstCut, int secondCut)
+        {
+            if (source == null || source.TimeCount < 2)
+                return;
+            int lastFrame = source.TimeCount - 1;
+            combinedTimeCuts[0] = Mathf.Clamp(firstCut, 0, lastFrame - 1);
+            combinedTimeCuts[1] = Mathf.Clamp(secondCut,
+                combinedTimeCuts[0] + 1, lastFrame);
+            activeCombinedTimeCut = 0;
+            currentFrame = combinedTimeCuts[0];
+            currentEventIndex = FindEventIndex(currentFrame);
+            UpdateCombinedTimeSelector();
+        }
+
+        public void CloseAllEventsTimeSelection()
+        {
+            if (!showAllEvents)
+                return;
+            showAllEvents = false;
+            combinedTimeDragging = false;
+            currentEventIndex = FindEventIndex(currentFrame);
+            if (singleLiveSource)
+                drillDown = true;
+            if (allEventsButtonText != null)
+                allEventsButtonText.text = singleLiveSource
+                    ? "TIME RANGE" : "ALL 6 EVENTS";
+            if (modeButtonText != null)
+                modeButtonText.text = singleLiveSource
+                    ? "LIVE SLICES" : "DRILL DOWN";
+            RebuildEventCubes();
             UpdateLabels();
             UpdateSelectionOverlay();
         }
@@ -268,18 +325,30 @@ namespace UnityVolumeRendering
 
                 string channel = source.Name.EndsWith("Water_Level",
                     StringComparison.OrdinalIgnoreCase) ? "Water_Level" : "HS";
+                DatasetInfo liveCandidate = null;
                 for (int index = 0; index < manifest.datasets.Length; index++)
                 {
                     DatasetInfo candidate = manifest.datasets[index];
                     if (!string.Equals(candidate.channel, channel,
                         StringComparison.OrdinalIgnoreCase))
                         continue;
+                    if (candidate.liveWave &&
+                        string.Equals(candidate.name, source.Name,
+                            StringComparison.OrdinalIgnoreCase))
+                        liveCandidate = candidate;
                     if (candidate.name.StartsWith("Prediction_",
                         StringComparison.OrdinalIgnoreCase))
                         predictionInfo = candidate;
                     else if (candidate.name.StartsWith("GroundTruth_",
                         StringComparison.OrdinalIgnoreCase))
                         groundTruthInfo = candidate;
+                }
+                if ((predictionInfo == null || groundTruthInfo == null) &&
+                    liveCandidate != null)
+                {
+                    singleLiveSource = true;
+                    predictionInfo = liveCandidate;
+                    groundTruthInfo = liveCandidate;
                 }
                 if (predictionInfo == null || groundTruthInfo == null)
                     throw new InvalidDataException(
@@ -682,9 +751,11 @@ namespace UnityVolumeRendering
                 sampledGroundTruth[slice] = ReadFrame(groundTruthPath,
                     groundTruthInfo, frame);
                 BuildTimeSlice(-CubeSeparation * 0.5f, u * CubeHeight,
-                    sampledPrediction[slice], "Prediction");
+                    sampledPrediction[slice], singleLiveSource
+                        ? "Wave live" : "Prediction");
                 BuildTimeSlice(CubeSeparation * 0.5f, u * CubeHeight,
-                    sampledGroundTruth[slice], "Ground Truth");
+                    sampledGroundTruth[slice], singleLiveSource
+                        ? "Wave live mirror" : "Ground Truth");
                 BuildSliceTimeLabel(-CubeSeparation * 0.5f, u * CubeHeight,
                     frame, false);
                 BuildSliceTimeLabel(CubeSeparation * 0.5f, u * CubeHeight,
@@ -698,6 +769,8 @@ namespace UnityVolumeRendering
         private void BuildSmoothRollupVolumes(EventRange range)
         {
             if (sampledFrames.Length == 0)
+                return;
+            if (singleLiveSource)
                 return;
             BuildRayMarchedVolume(-CubeSeparation * 0.5f,
                 predictionRawDirectory, predictionInfo, range, "Prediction");
@@ -953,9 +1026,9 @@ namespace UnityVolumeRendering
         private void ApplyModeVisibility()
         {
             if (rollupRoot != null)
-                rollupRoot.SetActive(!drillDown);
+                rollupRoot.SetActive(!singleLiveSource && !drillDown);
             if (sliceRoot != null)
-                sliceRoot.SetActive(drillDown);
+                sliceRoot.SetActive(singleLiveSource || drillDown);
             if (spotlightRoot != null)
                 spotlightRoot.SetActive(drillDown && !showAllEvents);
             if (selectionRoot != null)
@@ -1201,9 +1274,11 @@ namespace UnityVolumeRendering
                 CubeHeight * 0.48f, -CubeDepth * 0.5f - 0.035f);
 
             selectedPredictionPreviewMesh = BuildSelectedSliceCard(
-                "PREDICTION", 0.17f, new Color(0.38f, 0.90f, 1.0f, 0.95f));
+                singleLiveSource ? "WAVE LIVE" : "PREDICTION", 0.17f,
+                new Color(0.38f, 0.90f, 1.0f, 0.95f));
             selectedGroundTruthPreviewMesh = BuildSelectedSliceCard(
-                "GROUND TRUTH", -0.17f, new Color(1.0f, 0.78f, 0.38f, 0.95f));
+                singleLiveSource ? "WAVE MIRROR" : "GROUND TRUTH", -0.17f,
+                new Color(1.0f, 0.78f, 0.38f, 0.95f));
 
             GameObject labelObject = new GameObject("Selected slice detail label");
             labelObject.transform.SetParent(selectedSlicePreviewRoot.transform, false);
@@ -1285,11 +1360,14 @@ namespace UnityVolumeRendering
             ApplyPreviewColors(selectedGroundTruthPreviewMesh,
                 ReadFrame(groundTruthPath, groundTruthInfo, currentFrame));
             if (selectedSlicePreviewLabel != null)
-                selectedSlicePreviewLabel.text = "CUT " +
-                    (activeCombinedTimeCut == 0 ? "A" : "B") +
-                    " DETAIL  E" +
-                    (FindEventIndex(currentFrame) + 1).ToString("00") + "  " +
-                    TimeLabel(currentFrame);
+                selectedSlicePreviewLabel.text = singleLiveSource
+                    ? "CUT " + (activeCombinedTimeCut == 0 ? "A" : "B") +
+                      " DETAIL  LIVE HOUR " + (currentFrame + 1) + " / " +
+                      source.TimeCount + "  " + TimeLabel(currentFrame)
+                    : "CUT " + (activeCombinedTimeCut == 0 ? "A" : "B") +
+                      " DETAIL  E" +
+                      (FindEventIndex(currentFrame) + 1).ToString("00") +
+                      "  " + TimeLabel(currentFrame);
         }
 
         private void ApplyPreviewColors(Mesh mesh, float[] values)
@@ -1483,6 +1561,28 @@ namespace UnityVolumeRendering
         {
             if (selectionText == null)
                 return;
+            if (singleLiveSource)
+            {
+                float[] values = ReadFrame(predictionPath, predictionInfo,
+                    currentFrame);
+                int loaded = 0;
+                double sum = 0.0;
+                for (int index = 0; index < selected.Count; index++)
+                {
+                    float value = values[selected[index]];
+                    if (float.IsNaN(value) || float.IsInfinity(value))
+                        continue;
+                    loaded++;
+                    sum += value;
+                }
+                string liveUnit = predictionInfo.unit ?? string.Empty;
+                selectionText.text = "LIVE HOUR " + (currentFrame + 1) +
+                    " / " + source.TimeCount + "   " + loaded + " / " +
+                    selected.Count + " REGION NODES   MEAN " +
+                    (loaded > 0 ? (sum / loaded).ToString("0.00",
+                        CultureInfo.InvariantCulture) : "--") + " " + liveUnit;
+                return;
+            }
             if (!drillDown)
             {
             selectionText.text = showAllEvents
@@ -1582,19 +1682,70 @@ namespace UnityVolumeRendering
             float buttonGap = desktop ? 18.0f : 18.0f;
             float x = (rect.sizeDelta.x -
                 (buttonWidth * 4.0f + buttonGap * 3.0f)) * 0.5f;
-            CreateButton(panel, "EVENT <", x, () => StepEvent(-1));
+            CreateButton(panel, singleLiveSource ? "HOUR <" : "EVENT <", x,
+                () =>
+                {
+                    if (singleLiveSource)
+                        StepLiveHour(-1);
+                    else
+                        StepEvent(-1);
+                });
             x += buttonWidth + buttonGap;
-            CreateButton(panel, "EVENT >", x, () => StepEvent(1));
+            CreateButton(panel, singleLiveSource ? "HOUR >" : "EVENT >", x,
+                () =>
+                {
+                    if (singleLiveSource)
+                        StepLiveHour(1);
+                    else
+                        StepEvent(1);
+                });
             x += buttonWidth + buttonGap;
-            Button mode = CreateButton(panel, "DRILL DOWN", x, ToggleMode);
+            Button mode = CreateButton(panel, "DRILL DOWN", x, () =>
+            {
+                if (!singleLiveSource)
+                    ToggleMode();
+            });
             modeButtonText = mode.GetComponentInChildren<TextMeshProUGUI>();
+            if (singleLiveSource)
+            {
+                mode.interactable = false;
+                if (modeButtonText != null)
+                    modeButtonText.text = "LIVE SLICES";
+            }
             x += buttonWidth + buttonGap;
-            Button allEvents = CreateButton(panel, "ALL 6 EVENTS", x,
-                ToggleAllEvents);
+            Button allEvents = CreateButton(panel,
+                singleLiveSource ? "TIME RANGE" : "ALL 6 EVENTS", x,
+                () =>
+                {
+                    if (singleLiveSource)
+                    {
+                        if (spatialWorkbench == null)
+                            spatialWorkbench = FindObjectOfType<
+                                VolumeSTCubeQuestSpatialWorkbench>();
+                        spatialWorkbench?.DesktopOpenFieldSetup();
+                    }
+                    else
+                        ToggleAllEvents();
+                });
             allEventsButtonText =
                 allEvents.GetComponentInChildren<TextMeshProUGUI>();
             if (allEventsButtonText != null)
+            {
                 allEventsButtonText.fontSize = desktop ? 34 : 25;
+                if (singleLiveSource)
+                {
+                    allEventsButtonText.text = "TIME RANGE";
+                }
+            }
+        }
+
+        private void StepLiveHour(int direction)
+        {
+            if (source == null || source.TimeCount <= 0)
+                return;
+            int frame = (currentFrame + direction + source.TimeCount) %
+                source.TimeCount;
+            timeSelected?.Invoke(frame);
         }
 
         private void StepEvent(int direction)
@@ -1605,7 +1756,8 @@ namespace UnityVolumeRendering
             {
                 showAllEvents = false;
                 if (allEventsButtonText != null)
-                    allEventsButtonText.text = "ALL 6 EVENTS";
+                    allEventsButtonText.text = singleLiveSource
+                        ? "TIME RANGE" : "ALL 6 EVENTS";
             }
             int index = (currentEventIndex + direction + events.Count) % events.Count;
             timeSelected?.Invoke(events[index].first);
@@ -1616,8 +1768,9 @@ namespace UnityVolumeRendering
             showAllEvents = !showAllEvents;
             combinedTimeDragging = false;
             if (allEventsButtonText != null)
-                allEventsButtonText.text = showAllEvents
-                    ? "ONE EVENT" : "ALL 6 EVENTS";
+                allEventsButtonText.text = singleLiveSource
+                    ? showAllEvents ? "LIVE VIEW" : "TIME RANGE"
+                    : showAllEvents ? "ONE EVENT" : "ALL 6 EVENTS";
             if (showAllEvents && drillDown)
             {
                 drillDown = false;
@@ -1643,6 +1796,14 @@ namespace UnityVolumeRendering
                 currentEventIndex >= events.Count)
                 return;
             EventRange range = events[currentEventIndex];
+            if (singleLiveSource)
+            {
+                eventText.text = showAllEvents
+                    ? "LIVE 24H TIME RANGE   |   DRAG CUT A + CUT B"
+                    : "LIVE XYT SLICES   HOUR " +
+                      (currentFrame + 1) + " / " + source.TimeCount;
+                return;
+            }
             eventText.text = showAllEvents
                 ? "ALL 6 EVENTS   |   SET TWO CUTS FOR THREE TIME RANGES"
                 : "EVENT " + range.number.ToString("00") +

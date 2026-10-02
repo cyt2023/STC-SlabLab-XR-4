@@ -1,9 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.UI;
 
 namespace UnityVolumeRendering
@@ -42,6 +45,7 @@ namespace UnityVolumeRendering
             public int faceCount;
             public string coordinateFile;
             public string faceFile;
+            public string nodeIdFile;
         }
 
         [Serializable]
@@ -56,6 +60,23 @@ namespace UnityVolumeRendering
             public string geographicValuesEncoding;
             public int geographicFrameStrideBytes;
             public string[] timeHKT;
+            public bool liveWave;
+            public string waveField;
+            public string[] timeUTC;
+        }
+
+        [Serializable]
+        private sealed class WaveFrameItem
+        {
+            public int frameIndex;
+            public int nodeId;
+            public float value;
+        }
+
+        [Serializable]
+        private sealed class WaveFrameBatch
+        {
+            public WaveFrameItem[] items;
         }
 
         private sealed class TimelineEventRange
@@ -103,21 +124,42 @@ namespace UnityVolumeRendering
         private ConversionManifest conversionManifest;
         private Vector2[] geographicCoordinates;
         private int[] geographicTriangles;
+        private int[] geographicNodeIds;
+        private Dictionary<int, int> geographicNodeLookup;
         private string geographicValuesPath;
         private bool usingExactGeographicMesh;
         private float mapWidth = 1.48f;
         private float mapDepth = 1.02f;
         private float sharedPhysicalMinimum;
         private float sharedPhysicalMaximum = 1.0f;
+        private float[] liveFrameValues;
+        private float[][] liveTimelineValues;
+        private int liveFrameGeneration;
+        private int liveLoadingFrame = -1;
+        private int liveCompletedBatches;
+        private int liveFailedBatches;
+        private int liveTotalBatches;
+        private bool liveTimelineStarted;
+        private bool pendingLiveFetch;
+        private bool liveBatchRedraw;
+        private bool suppressLiveFetch;
+        private int[] liveRequestNodeIndices;
+        private int livePriorityBatchCount;
+        private int livePriorityCompletedBatches;
+        private const int LivePriorityWorkerCount = 8;
+        private const int LiveBackgroundWorkerCount = 3;
 
         public bool IsPlaying => playing;
 
         public VolumeSTCubeForVrXytCompanion XytCompanion => xytCompanion;
 
-        public string PlaybackButtonLabel => playing ? "PAUSE" : "PLAY";
+        public string PlaybackButtonLabel => metadata != null && metadata.liveWave
+            ? playing ? "PAUSE LIVE" : "PLAY LIVE"
+            : playing ? "PAUSE" : "PLAY";
 
         public string PlaybackSpeedLabel =>
-            "SPEED " + PlaybackSpeeds[playbackSpeedIndex].ToString("0") + "x";
+            (metadata != null && metadata.liveWave ? "RATE " : "SPEED ") +
+            PlaybackSpeeds[playbackSpeedIndex].ToString("0") + "x";
 
         public void TogglePlayback()
         {
@@ -138,10 +180,16 @@ namespace UnityVolumeRendering
                 surfaceRoot.SetActive(visible);
         }
 
-        public void OpenCombinedXytTimeSelection()
+        public void OpenCombinedXytTimeSelection(int firstCut, int secondCut)
         {
             SetPlaying(false);
+            xytCompanion?.SetCombinedTimeRange(firstCut, secondCut);
             xytCompanion?.OpenAllEventsTimeSelection();
+        }
+
+        public void CloseCombinedXytTimeSelection()
+        {
+            xytCompanion?.CloseAllEventsTimeSelection();
         }
 
         public bool TryUpdateGeographicSnapshot(Mesh targetMesh, int frameIndex,
@@ -273,7 +321,13 @@ namespace UnityVolumeRendering
             if (candidate == null || string.IsNullOrWhiteSpace(candidate.DirectoryPath))
                 return false;
             string normalized = candidate.DirectoryPath.Replace('\\', '/');
-            return normalized.IndexOf("/For_VR/UnityRaw/", StringComparison.OrdinalIgnoreCase) >= 0;
+            if (normalized.IndexOf("/For_VR/UnityRaw/",
+                    StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            string root = Directory.GetParent(candidate.DirectoryPath)?.FullName;
+            return !string.IsNullOrWhiteSpace(root) &&
+                File.Exists(Path.Combine(root, "conversion_manifest.json")) &&
+                Directory.Exists(Path.Combine(root, "GeoSurface"));
         }
 
         public void Initialize(VolumeSTCubeSliceDataset source, int initialFrame,
@@ -319,6 +373,11 @@ namespace UnityVolumeRendering
             if (dataset == null || dataset.RawPaths == null || dataset.RawPaths.Length == 0)
                 return;
             frameIndex = Mathf.Clamp(frameIndex, 0, dataset.RawPaths.Length - 1);
+            if (metadata != null && metadata.liveWave && !suppressLiveFetch)
+            {
+                BeginLiveFrame(frameIndex, notify);
+                return;
+            }
             int sampleCount = usingExactGeographicMesh
                 ? geographicCoordinates.Length
                 : dataset.DimX * dataset.DimY;
@@ -415,7 +474,7 @@ namespace UnityVolumeRendering
             surfaceMesh.RecalculateNormals();
             surfaceMesh.RecalculateBounds();
             UpdateTimelineText(minimum, physicalRange);
-            if (timelineSlider != null)
+            if (timelineSlider != null && !liveBatchRedraw)
             {
                 suppressSlider = true;
                 timelineSlider.SetValueWithoutNotify(currentFrame);
@@ -423,6 +482,325 @@ namespace UnityVolumeRendering
             }
             if (notify)
                 timeChanged?.Invoke(currentFrame);
+        }
+
+        private void BeginLiveFrame(int frameIndex, bool notify)
+        {
+            if (!usingExactGeographicMesh || geographicNodeIds == null ||
+                metadata.timeUTC == null || frameIndex >= metadata.timeUTC.Length)
+                return;
+            liveLoadingFrame = frameIndex;
+            liveFrameValues = ReadGeographicPhysicalFrame(
+                frameIndex, geographicNodeIds.Length);
+            suppressLiveFetch = true;
+            ShowFrame(frameIndex, notify);
+            suppressLiveFetch = false;
+            UpdateLiveLoadingText();
+            if (liveTimelineStarted)
+                return;
+
+            liveTimelineStarted = true;
+            liveFrameGeneration++;
+            int generation = liveFrameGeneration;
+            liveCompletedBatches = 0;
+            liveFailedBatches = 0;
+            BuildLiveRequestOrder();
+            liveTotalBatches = Mathf.CeilToInt(
+                liveRequestNodeIndices.Length / 100.0f);
+            liveTimelineValues = new float[dataset.TimeCount][];
+            for (int frame = 0; frame < dataset.TimeCount; frame++)
+                liveTimelineValues[frame] = ReadGeographicPhysicalFrame(
+                    frame, geographicNodeIds.Length);
+            // The workspace holds this Field inactive until its first texture is
+            // ready, and Unity silently drops a coroutine started on an inactive
+            // object: the live batches would never be fetched. Queue the start
+            // and run it from OnEnable instead.
+            if (!gameObject.activeInHierarchy)
+            {
+                pendingLiveFetch = true;
+                return;
+            }
+            for (int worker = 0; worker < Mathf.Min(
+                livePriorityBatchCount > 0
+                    ? LivePriorityWorkerCount : LiveBackgroundWorkerCount,
+                liveTotalBatches); worker++)
+                StartCoroutine(FetchLiveTimelineWorker(generation, worker));
+        }
+
+        private void OnEnable()
+        {
+            if (!pendingLiveFetch || !liveTimelineStarted)
+                return;
+            pendingLiveFetch = false;
+            liveFrameGeneration++;
+            int generation = liveFrameGeneration;
+            for (int worker = 0; worker < Mathf.Min(
+                livePriorityBatchCount > 0
+                    ? LivePriorityWorkerCount : LiveBackgroundWorkerCount,
+                liveTotalBatches); worker++)
+                StartCoroutine(FetchLiveTimelineWorker(generation, worker));
+        }
+
+        private void BuildLiveRequestOrder()
+        {
+            int nodeCount = geographicNodeIds.Length;
+            List<int> ordered = new List<int>(nodeCount);
+            bool[] included = new bool[nodeCount];
+            int[] priority = xytCompanion?.GetLivePriorityNodeIndices();
+            if (priority != null)
+            {
+                for (int index = 0; index < priority.Length; index++)
+                {
+                    int nodeIndex = priority[index];
+                    if (nodeIndex < 0 || nodeIndex >= nodeCount ||
+                        included[nodeIndex])
+                        continue;
+                    included[nodeIndex] = true;
+                    ordered.Add(nodeIndex);
+                }
+            }
+            livePriorityBatchCount = Mathf.CeilToInt(ordered.Count / 100.0f);
+            livePriorityCompletedBatches = 0;
+            for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+            {
+                if (!included[nodeIndex])
+                    ordered.Add(nodeIndex);
+            }
+            liveRequestNodeIndices = ordered.ToArray();
+        }
+
+        private IEnumerator FetchLiveTimelineWorker(int generation, int worker)
+        {
+            int batchIndex = worker;
+            bool backgroundPhase = false;
+            while (batchIndex < liveTotalBatches)
+            {
+                if (generation != liveFrameGeneration)
+                    yield break;
+                if (!backgroundPhase && batchIndex >= livePriorityBatchCount)
+                {
+                    if (worker >= LiveBackgroundWorkerCount)
+                        yield break;
+                    while (livePriorityCompletedBatches <
+                        livePriorityBatchCount)
+                    {
+                        if (generation != liveFrameGeneration)
+                            yield break;
+                        yield return null;
+                    }
+                    backgroundPhase = true;
+                    batchIndex = livePriorityBatchCount + worker;
+                    if (batchIndex >= liveTotalBatches)
+                        yield break;
+                }
+                int start = batchIndex * 100;
+                int count = Mathf.Min(100,
+                    liveRequestNodeIndices.Length - start);
+                bool batchCached = true;
+                for (int frame = 0; frame < liveTimelineValues.Length &&
+                    batchCached; frame++)
+                {
+                    for (int offset = 0; offset < count; offset++)
+                    {
+                        int nodeIndex = liveRequestNodeIndices[start + offset];
+                        float value = liveTimelineValues[frame][nodeIndex];
+                        if (!float.IsNaN(value) && !float.IsInfinity(value))
+                            continue;
+                        batchCached = false;
+                        break;
+                    }
+                }
+                if (batchCached)
+                {
+                    liveCompletedBatches++;
+                    bool priorityReady = false;
+                    if (batchIndex < livePriorityBatchCount)
+                    {
+                        livePriorityCompletedBatches++;
+                        priorityReady = livePriorityCompletedBatches >=
+                            livePriorityBatchCount;
+                    }
+                    UpdateLiveLoadingText();
+                    RefreshLiveTimelineVisuals(false,
+                        priorityReady ||
+                        liveCompletedBatches >= liveTotalBatches);
+                    batchIndex += backgroundPhase
+                        ? LiveBackgroundWorkerCount : LivePriorityWorkerCount;
+                    continue;
+                }
+
+                StringBuilder json = new StringBuilder(960);
+                json.Append("{\"start\":\"");
+                json.Append(EscapeJson(metadata.timeUTC[0]));
+                json.Append("\",\"end\":\"");
+                DateTimeOffset timelineEnd = DateTimeOffset.Parse(
+                    metadata.timeUTC[metadata.timeUTC.Length - 1]).AddHours(1);
+                json.Append(timelineEnd.UtcDateTime.ToString(
+                    "yyyy-MM-dd'T'HH:mm:ss'Z'"));
+                json.Append("\",\"field\":\"");
+                json.Append(EscapeJson(metadata.waveField));
+                json.Append("\",\"nodeIds\":[");
+                for (int offset = 0; offset < count; offset++)
+                {
+                    if (offset > 0)
+                        json.Append(',');
+                    int nodeIndex = liveRequestNodeIndices[start + offset];
+                    json.Append(geographicNodeIds[nodeIndex]);
+                }
+                json.Append("]}");
+
+                bool loaded = false;
+                string lastError = string.Empty;
+                for (int attempt = 0; attempt < 6 && !loaded; attempt++)
+                {
+                    if (attempt > 0)
+                    {
+                        float retryDelay = Mathf.Min(60.0f,
+                            5.0f * Mathf.Pow(2.0f, attempt - 1)) + worker;
+                        yield return new WaitForSecondsRealtime(retryDelay);
+                        if (generation != liveFrameGeneration)
+                            yield break;
+                    }
+
+                    byte[] body = Encoding.UTF8.GetBytes(json.ToString());
+                    using (UnityWebRequest request = new UnityWebRequest(
+                        "http://127.0.0.1:8020/wave/timeline-batch",
+                        UnityWebRequest.kHttpVerbPOST))
+                    {
+                        request.uploadHandler = new UploadHandlerRaw(body);
+                        request.downloadHandler = new DownloadHandlerBuffer();
+                        request.timeout = 120;
+                        request.SetRequestHeader("Content-Type", "application/json");
+                        yield return request.SendWebRequest();
+                        if (generation != liveFrameGeneration)
+                            yield break;
+                        if (request.result == UnityWebRequest.Result.Success)
+                        {
+                            WaveFrameBatch batch = JsonUtility.FromJson<WaveFrameBatch>(
+                                request.downloadHandler.text);
+                            if (batch?.items != null)
+                            {
+                                for (int itemIndex = 0; itemIndex < batch.items.Length;
+                                    itemIndex++)
+                                {
+                                    WaveFrameItem item = batch.items[itemIndex];
+                                    if (item.frameIndex >= 0 &&
+                                        item.frameIndex < liveTimelineValues.Length &&
+                                        geographicNodeLookup.TryGetValue(
+                                            item.nodeId, out int nodeIndex))
+                                        liveTimelineValues[item.frameIndex][nodeIndex] =
+                                            item.value;
+                                }
+                            }
+                            loaded = true;
+                        }
+                        else
+                        {
+                            lastError = request.error + " " +
+                                request.downloadHandler.text;
+                        }
+                    }
+                }
+
+                if (!loaded)
+                {
+                    liveFailedBatches++;
+                    Debug.LogWarning("Wave live frame batch failed after retries: " +
+                        lastError);
+                }
+                liveCompletedBatches++;
+                bool priorityReadyNow = false;
+                if (batchIndex < livePriorityBatchCount)
+                {
+                    livePriorityCompletedBatches++;
+                    priorityReadyNow = livePriorityCompletedBatches >=
+                        livePriorityBatchCount;
+                }
+                if (loaded)
+                {
+                    PersistLiveTimeline();
+                    liveFrameValues = liveTimelineValues[currentFrame];
+                    RefreshLiveTimelineVisuals(true,
+                        priorityReadyNow);
+                }
+                UpdateLiveLoadingText();
+                if (liveCompletedBatches >= liveTotalBatches)
+                {
+                    RefreshLiveTimelineVisuals(true, true);
+                }
+                batchIndex += backgroundPhase
+                    ? LiveBackgroundWorkerCount : LivePriorityWorkerCount;
+            }
+        }
+
+        private void PersistLiveTimeline()
+        {
+            if (liveTimelineValues == null ||
+                string.IsNullOrWhiteSpace(geographicValuesPath))
+                return;
+            using (FileStream stream = new FileStream(geographicValuesPath,
+                FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                for (int frame = 0; frame < liveTimelineValues.Length; frame++)
+                {
+                    float[] values = liveTimelineValues[frame];
+                    byte[] bytes = new byte[values.Length * 4];
+                    Buffer.BlockCopy(values, 0, bytes, 0, bytes.Length);
+                    stream.Position = (long)frame *
+                        metadata.geographicFrameStrideBytes;
+                    stream.Write(bytes, 0, bytes.Length);
+                }
+            }
+        }
+
+        private void RefreshLiveTimelineVisuals(bool redrawSurface,
+            bool forceXyt = false)
+        {
+            if (redrawSurface)
+            {
+                liveBatchRedraw = true;
+                suppressLiveFetch = true;
+                ShowFrame(currentFrame, false);
+                suppressLiveFetch = false;
+                liveBatchRedraw = false;
+            }
+            if (forceXyt || (liveCompletedBatches > 0 &&
+                liveCompletedBatches % 5 == 0))
+                xytCompanion?.RefreshLiveData(currentFrame);
+        }
+
+        private void UpdateLiveLoadingText()
+        {
+            if (geographicText == null || liveTotalBatches <= 0)
+                return;
+            float progress = liveCompletedBatches / (float)liveTotalBatches;
+            string state = liveCompletedBatches >= liveTotalBatches
+                ? liveFailedBatches > 0
+                    ? "LIVE TIMELINE PARTIAL · AVAILABLE HOURS KEEP PLAYING"
+                    : "LIVE 24H TIMELINE READY · CACHED"
+                : "LIVE 24H STREAM · " + Mathf.RoundToInt(progress * 100.0f) +
+                  "% · " + liveCompletedBatches + "/" + liveTotalBatches +
+                  " NODE BATCHES";
+            string summary = geographicText.text;
+            int lastLine = summary.LastIndexOf('\n');
+            if (lastLine >= 0)
+            {
+                string suffix = summary.Substring(lastLine + 1);
+                if (suffix.StartsWith("PLAYING · ",
+                        StringComparison.Ordinal) ||
+                    suffix.StartsWith("PAUSED · ",
+                        StringComparison.Ordinal))
+                    summary = summary.Substring(0, lastLine);
+            }
+            geographicText.text = summary + "\n" +
+                (playing ? "PLAYING · " : "PAUSED · ") + state;
+        }
+
+        private static string EscapeJson(string value)
+        {
+            return string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
         private void Update()
@@ -612,7 +990,10 @@ namespace UnityVolumeRendering
             const float startButtonX = 844.0f;
             const float speedButtonX = 1010.0f;
             const float sliderX = 24.0f;
-            Button play = CreateButton(panel, "START", new Vector2(startButtonX, 30), new Vector2(150, 66), () =>
+            string initialPlayLabel = metadata != null && metadata.liveWave
+                ? "PLAY LIVE" : "START";
+            Button play = CreateButton(panel, initialPlayLabel,
+                new Vector2(startButtonX, 30), new Vector2(150, 66), () =>
             {
                 if (playing)
                 {
@@ -623,7 +1004,10 @@ namespace UnityVolumeRendering
                 SetPlaying(true);
             });
             playText = play.GetComponentInChildren<TextMeshProUGUI>();
-            Button speed = CreateButton(panel, "SPEED 1x", new Vector2(speedButtonX, 30), new Vector2(166, 66), () =>
+            string initialSpeedLabel = metadata != null && metadata.liveWave
+                ? "RATE 1x" : "SPEED 1x";
+            Button speed = CreateButton(panel, initialSpeedLabel,
+                new Vector2(speedButtonX, 30), new Vector2(166, 66), () =>
             {
                 playbackSpeedIndex = (playbackSpeedIndex + 1) % PlaybackSpeeds.Length;
                 UpdateSpeedText();
@@ -850,14 +1234,19 @@ namespace UnityVolumeRendering
                 ? Time.unscaledTime + CurrentPlaybackInterval()
                 : Time.unscaledTime;
             if (playText != null)
-                playText.text = playing ? "PAUSE" : "START";
+                playText.text = metadata != null && metadata.liveWave
+                    ? playing ? "PAUSE LIVE" : "PLAY LIVE"
+                    : playing ? "PAUSE" : "START";
+            if (metadata != null && metadata.liveWave)
+                UpdateLiveLoadingText();
         }
 
         private void UpdateSpeedText()
         {
             if (speedText == null)
                 return;
-            speedText.text = "SPEED " +
+            speedText.text = (metadata != null && metadata.liveWave
+                ? "RATE " : "SPEED ") +
                 PlaybackSpeeds[playbackSpeedIndex].ToString("0") + "x";
         }
 
@@ -896,7 +1285,10 @@ namespace UnityVolumeRendering
                         frameMinimum, sum / validCount, frameMaximum, unit,
                         sharedPhysicalMinimum, sharedPhysicalMaximum)
                     : "FRAME  no valid samples";
-                geographicText.text = statistics + " (PRED+GT)\n" + GeographicSummary();
+                string sourceLabel = metadata != null && metadata.liveWave
+                    ? " (LIVE SERVER)" : " (PRED+GT)";
+                geographicText.text = statistics + sourceLabel + "\n" +
+                    GeographicSummary();
             }
         }
 
@@ -925,14 +1317,20 @@ namespace UnityVolumeRendering
                 surface.coordinateFile.Replace('/', Path.DirectorySeparatorChar));
             string facePath = Path.Combine(unityRawRoot,
                 surface.faceFile.Replace('/', Path.DirectorySeparatorChar));
+            string nodeIdPath = Path.Combine(unityRawRoot,
+                (string.IsNullOrWhiteSpace(surface.nodeIdFile)
+                    ? "GeoSurface/node_ids_u32.bin" : surface.nodeIdFile)
+                .Replace('/', Path.DirectorySeparatorChar));
             geographicValuesPath = Path.Combine(unityRawRoot,
                 metadata.geographicValuesFile.Replace('/', Path.DirectorySeparatorChar));
             long expectedValues = (long)metadata.geographicFrameStrideBytes *
                 dataset.TimeCount;
             if (!File.Exists(coordinatePath) || !File.Exists(facePath) ||
+                !File.Exists(nodeIdPath) ||
                 !File.Exists(geographicValuesPath) ||
                 metadata.geographicFrameStrideBytes < surface.nodeCount * 4 ||
                 new FileInfo(coordinatePath).Length != surface.nodeCount * 8L ||
+                new FileInfo(nodeIdPath).Length != surface.nodeCount * 4L ||
                 new FileInfo(facePath).Length != surface.faceCount * 12L ||
                 new FileInfo(geographicValuesPath).Length < expectedValues)
                 return;
@@ -951,6 +1349,16 @@ namespace UnityVolumeRendering
                 if (geographicTriangles[index] < 0 ||
                     geographicTriangles[index] >= geographicCoordinates.Length)
                     throw new InvalidDataException("Geographic face index is outside the node array.");
+            geographicNodeIds = new int[surface.nodeCount];
+            geographicNodeLookup = new Dictionary<int, int>(surface.nodeCount);
+            using (BinaryReader reader = new BinaryReader(File.OpenRead(nodeIdPath)))
+            {
+                for (int index = 0; index < geographicNodeIds.Length; index++)
+                {
+                    geographicNodeIds[index] = checked((int)reader.ReadUInt32());
+                    geographicNodeLookup[geographicNodeIds[index]] = index;
+                }
+            }
             usingExactGeographicMesh = true;
         }
 

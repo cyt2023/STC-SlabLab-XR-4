@@ -1,4 +1,7 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -30,6 +33,7 @@ namespace UnityVolumeRendering
         private Text titleText;
         private Text noticeText;
         private float noticeExpiresAt;
+        private bool hoverHintShown;
         private GameObject helpPanel;
         private GameObject bottomBar;
         private Text bottomStatusText;
@@ -43,6 +47,14 @@ namespace UnityVolumeRendering
         private Button pivotButton;
         private Button drillButton;
         private Button rollUpButton;
+        private Button historyButton;
+        private GameObject historyPanel;
+        private RectTransform historyList;
+        private Text historyPageText;
+        private Button historyPrevious;
+        private Button historyNext;
+        private int historyPage;
+        private const int HistoryPageSize = 5;
         private GraphicRaycaster hudRaycaster;
         private readonly List<Canvas> workflowPanels = new List<Canvas>();
         private Rect lastSafeArea;
@@ -100,7 +112,7 @@ namespace UnityVolumeRendering
                 new Color(0.020f, 0.038f, 0.062f, 0.99f))
                 .GetComponent<RectTransform>();
             AnchorTopRow(titleBar, 0.0f, 66.0f);
-            titleText = CreateText(titleBar, "STEP 1  ·  OPEN A DATASET");
+            titleText = CreateText(titleBar, "STEP 1  ·  LOAD LIVE WAVE DATA");
             titleText.fontSize = 29;
             titleText.fontStyle = FontStyle.Bold;
             titleText.alignment = TextAnchor.MiddleCenter;
@@ -130,9 +142,16 @@ namespace UnityVolumeRendering
             CreateButton("Next", actionBar,
                 workbench.DesktopNextStep, 160.0f, PrimaryAction);
             CreateButton("Reset View", actionBar,
-                workbench.ResetVolumeLayout, 170.0f, UtilityAction);
+                ResetView, 170.0f, UtilityAction);
             CreateButton("Help", actionBar, ToggleHelp, 130.0f,
                 HelpAction);
+
+            historyButton = CreateButton("History", actionBar,
+                ToggleHistory, 180.0f, SecondaryAction);
+            // Snapshot is appended so the order the operator already knows
+            // (Previous, Next, Reset View, Help, History) is untouched.
+            CreateButton("Snapshot", actionBar, SaveSnapshot, 170.0f,
+                UtilityAction);
 
             bottomBar = CreatePanel("Desktop Work Bar", safeAreaRoot,
                 new Color(0.018f, 0.043f, 0.064f, 0.985f));
@@ -152,8 +171,9 @@ namespace UnityVolumeRendering
             bottomStatusText = CreateText(bottomRect, string.Empty);
             LayoutElement statusLayout =
                 bottomStatusText.gameObject.AddComponent<LayoutElement>();
-            statusLayout.minWidth = 540.0f;
-            statusLayout.preferredWidth = 540.0f;
+            statusLayout.minWidth = 180.0f;
+            statusLayout.preferredWidth = 430.0f;
+            statusLayout.flexibleWidth = 1.0f;
             bottomStatusText.fontSize = 23;
             bottomStatusText.fontStyle = FontStyle.Bold;
             bottomStatusText.alignment = TextAnchor.MiddleLeft;
@@ -173,11 +193,11 @@ namespace UnityVolumeRendering
             fullMatrixButton = CreateButton("FULL MATRIX", bottomRect,
                 workbench.DesktopBuildFullMatrix, 200.0f, ConfirmAction);
             pivotButton = CreateButton("PIVOT", bottomRect,
-                workbench.DesktopBeginPivot, 140.0f, HelpAction);
+                workbench.DesktopBeginPivot, 240.0f, HelpAction);
             drillButton = CreateButton("DRILL", bottomRect,
-                workbench.DesktopBeginDrill, 140.0f, PrimaryAction);
+                workbench.DesktopBeginDrill, 190.0f, PrimaryAction);
             rollUpButton = CreateButton("ROLL-UP", bottomRect,
-                workbench.DesktopBeginRollUp, 160.0f,
+                workbench.DesktopBeginRollUp, 190.0f,
                 new Color(0.10f, 0.62f, 0.34f, 1.0f));
             bottomBar.SetActive(false);
 
@@ -188,16 +208,119 @@ namespace UnityVolumeRendering
             helpRect.anchorMax = new Vector2(0.5f, 0.5f);
             helpRect.pivot = new Vector2(0.5f, 0.5f);
             helpRect.anchoredPosition = new Vector2(0.0f, -55.0f);
-            helpRect.sizeDelta = new Vector2(720.0f, 250.0f);
+            // 250 tall fit the pointer/gesture rows exactly. The shortcut rows
+            // below are kept under ~50 characters each (28 px insets leave about
+            // that much at 23 pt) and the extra height stops any truncation.
+            helpRect.sizeDelta = new Vector2(720.0f, 340.0f);
             Text helpText = CreateText(helpRect,
                 "DESKTOP\nLeft click: choose or interact    Right drag: look\n" +
                 "Wheel: zoom    Previous / Next: guided workflow\n\n" +
                 "TABLET\nOne finger: choose or interact    Two fingers: look\n" +
-                "Pinch: zoom");
+                "Pinch: zoom\n\n" + SlabLabShortcuts.HelpLine);
             helpText.fontSize = 23;
             Stretch(helpText.rectTransform, 28.0f, 20.0f);
             helpPanel.SetActive(false);
+            BuildHistoryPanel();
             ApplySafeArea();
+        }
+
+        private void BuildHistoryPanel()
+        {
+            historyPanel = CreatePanel("Analysis history overlay", safeAreaRoot,
+                new Color(0.01f, 0.02f, 0.04f, 0.92f));
+            RectTransform overlay = historyPanel.GetComponent<RectTransform>();
+            overlay.anchorMin = Vector2.zero;
+            overlay.anchorMax = Vector2.one;
+            overlay.offsetMin = Vector2.zero;
+            overlay.offsetMax = Vector2.zero;
+            RectTransform card = CreatePanel("History card", overlay,
+                new Color(0.035f, 0.08f, 0.11f, 1.0f)).GetComponent<RectTransform>();
+            card.anchorMin = new Vector2(0.12f, 0.16f);
+            card.anchorMax = new Vector2(0.88f, 0.84f);
+            card.offsetMin = Vector2.zero;
+            card.offsetMax = Vector2.zero;
+            VerticalLayoutGroup layout = card.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(24, 24, 20, 20);
+            layout.spacing = 10;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            Text title = CreateText(card, "Analysis history · this session");
+            title.fontSize = 26;
+            title.fontStyle = FontStyle.Bold;
+            title.gameObject.AddComponent<LayoutElement>().preferredHeight = 42;
+            GameObject list = new GameObject("Results", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+            list.transform.SetParent(card, false);
+            historyList = list.GetComponent<RectTransform>();
+            list.GetComponent<LayoutElement>().flexibleHeight = 1;
+            VerticalLayoutGroup rows = list.GetComponent<VerticalLayoutGroup>();
+            rows.spacing = 10;
+            rows.childControlHeight = true;
+            rows.childControlWidth = true;
+            rows.childForceExpandWidth = true;
+            rows.childForceExpandHeight = true;
+            GameObject footer = new GameObject("History navigation", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+            footer.transform.SetParent(card, false);
+            footer.GetComponent<LayoutElement>().preferredHeight = 54;
+            HorizontalLayoutGroup navigation = footer.GetComponent<HorizontalLayoutGroup>();
+            navigation.spacing = 12;
+            navigation.childForceExpandWidth = false;
+            historyPrevious = CreateButton("Earlier", footer.transform, () => { historyPage--; RefreshHistory(); }, 150, SecondaryAction);
+            historyPageText = CreateText(footer.transform, string.Empty);
+            historyPageText.alignment = TextAnchor.MiddleCenter;
+            historyPageText.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            historyNext = CreateButton("More", footer.transform, () => { historyPage++; RefreshHistory(); }, 150, SecondaryAction);
+            CreateButton("Close", footer.transform, () => historyPanel.SetActive(false), 140, BackAction);
+            historyPanel.SetActive(false);
+        }
+
+        private void ToggleHistory()
+        {
+            if (historyPanel == null || workbench == null || workbench.DesktopHistoryBusy) return;
+            bool show = !historyPanel.activeSelf;
+            historyPanel.SetActive(show);
+            if (show)
+            {
+                historyPage = 0;
+                RefreshHistory();
+                helpPanel.SetActive(false);
+                historyPanel.transform.SetAsLastSibling();
+            }
+        }
+
+        private void RefreshHistory()
+        {
+            for (int i = historyList.childCount - 1; i >= 0; i--)
+            {
+                GameObject child = historyList.GetChild(i).gameObject;
+                child.SetActive(false);
+                Destroy(child);
+            }
+            int count = workbench.DesktopAnalysisCount;
+            int pages = Mathf.Max(1, (count + HistoryPageSize - 1) / HistoryPageSize);
+            historyPage = Mathf.Clamp(historyPage, 0, pages - 1);
+            historyPageText.text = (historyPage + 1) + " / " + pages;
+            historyPrevious.interactable = historyPage > 0;
+            historyNext.interactable = historyPage + 1 < pages;
+            if (count == 0)
+            {
+                Text empty = CreateText(historyList, "Your completed analyses will appear here.\nGenerate charts to get started.");
+                empty.alignment = TextAnchor.MiddleCenter;
+                return;
+            }
+            for (int row = 0; row < HistoryPageSize; row++)
+            {
+                int index = count - 1 - historyPage * HistoryPageSize - row;
+                if (index < 0) break;
+                Button button = CreateButton(workbench.DesktopAnalysisLabel(index), historyList,
+                    () => { workbench.DesktopOpenAnalysis(index); historyPanel.SetActive(false); }, 500, SecondaryAction);
+                button.GetComponent<LayoutElement>().preferredHeight = 64;
+                button.GetComponent<LayoutElement>().flexibleHeight = 0;
+                Text label = button.GetComponentInChildren<Text>();
+                label.alignment = TextAnchor.MiddleLeft;
+                Stretch(label.rectTransform, 18, 6);
+            }
         }
 
         private void Update()
@@ -216,8 +339,15 @@ namespace UnityVolumeRendering
                     titleText.text = title;
             }
             RefreshBottomBar();
-            if (Input.GetKeyDown(KeyCode.H) || Input.GetKeyDown(KeyCode.F1))
-                ToggleHelp();
+            if (historyButton != null && workbench != null)
+            {
+                SetButtonText(historyButton, "History (" + workbench.DesktopAnalysisCount + ")");
+                historyButton.interactable = !workbench.DesktopHistoryBusy;
+            }
+            SlabLabShortcut shortcut = PollShortcut(out KeyCode shortcutKey);
+            if (shortcut != SlabLabShortcut.None)
+                ApplyShortcut(shortcut, shortcutKey);
+            UpdateHoverHint();
             if (lastSafeArea != Screen.safeArea ||
                 lastScreenSize.x != Screen.width || lastScreenSize.y != Screen.height)
                 ApplySafeArea();
@@ -265,11 +395,12 @@ namespace UnityVolumeRendering
             speedButton.gameObject.SetActive(boundary);
             backButton.gameObject.SetActive(boundary);
             confirmButton.gameObject.SetActive(boundary);
-            intentButton.gameObject.SetActive(workflow);
+            bool result = workbench.DesktopMatrixTaskActive;
+            intentButton.gameObject.SetActive(workflow && !result);
             fullMatrixButton.gameObject.SetActive(workflow);
-            pivotButton.gameObject.SetActive(workflow);
-            drillButton.gameObject.SetActive(workflow);
-            rollUpButton.gameObject.SetActive(workflow);
+            pivotButton.gameObject.SetActive(workflow && result);
+            drillButton.gameObject.SetActive(workflow && result);
+            rollUpButton.gameObject.SetActive(workflow && result);
             if (workflow)
             {
                 // Desktop moves directly from axis binding to MatPlot Intent.
@@ -287,6 +418,12 @@ namespace UnityVolumeRendering
                 SetWorkflowButtonState(rollUpButton, canTransform,
                     new Color(0.10f, 0.62f, 0.34f, 1.0f));
             }
+            SetButtonText(intentButton, "Analysis setup");
+            SetButtonText(pivotButton, "Change comparison");
+            SetButtonText(drillButton, "Expand detail");
+            SetButtonText(rollUpButton, "Group ranges");
+            SetButtonText(primaryButton, "Set time range");
+            SetButtonText(confirmButton, "Confirm range");
             SetButtonText(playbackButton, workbench.DesktopPlaybackLabel);
             SetButtonText(speedButton, workbench.DesktopPlaybackSpeedLabel);
         }
@@ -311,11 +448,11 @@ namespace UnityVolumeRendering
             if (hud == null || hud.noticeText == null ||
                 string.IsNullOrWhiteSpace(message))
                 return;
-            hud.noticeText.text = message.ToUpperInvariant();
+            hud.noticeText.text = message;
             hud.noticeText.gameObject.SetActive(true);
             if (hud.titleText != null)
                 hud.titleText.gameObject.SetActive(false);
-            hud.noticeExpiresAt = Time.unscaledTime + 3.5f;
+            hud.noticeExpiresAt = Time.unscaledTime + 6.0f;
         }
 
         private void EnsureWorkflowButtons()
@@ -365,13 +502,13 @@ namespace UnityVolumeRendering
                     workbench.DesktopBuildFullMatrix, 200.0f, ConfirmAction);
             if (pivotButton == null)
                 pivotButton = CreateButton("PIVOT", bottomBar.transform,
-                    workbench.DesktopBeginPivot, 140.0f, HelpAction);
+                    workbench.DesktopBeginPivot, 240.0f, HelpAction);
             if (drillButton == null)
                 drillButton = CreateButton("DRILL", bottomBar.transform,
-                    workbench.DesktopBeginDrill, 140.0f, PrimaryAction);
+                    workbench.DesktopBeginDrill, 190.0f, PrimaryAction);
             if (rollUpButton == null)
                 rollUpButton = CreateButton("ROLL-UP", bottomBar.transform,
-                    workbench.DesktopBeginRollUp, 160.0f,
+                    workbench.DesktopBeginRollUp, 190.0f,
                     new Color(0.10f, 0.62f, 0.34f, 1.0f));
         }
 
@@ -447,8 +584,9 @@ namespace UnityVolumeRendering
                     workbench.DesktopComposerPanelActive &&
                     (panel.name == "FacetSlab Configuration Preview" ||
                      panel.name == "MatPlotAgent Intent Composer");
-                bool intentPrimary = desktopComposer && workbench != null &&
-                    workbench.DesktopIntentPanelPrimary;
+                bool composerPrimary = desktopComposer && workbench != null &&
+                    (workbench.DesktopIntentPanelPrimary ||
+                     panel.name == "FacetSlab Configuration Preview");
                 // Reuse the proven VR interaction surfaces for the advanced
                 // analysis operations. On desktop they are treated as the one
                 // central task surface and fitted between the fixed toolbars.
@@ -480,13 +618,13 @@ namespace UnityVolumeRendering
                     continue;
                 float panelHorizontalWorld = desktopComposer
                     ? viewHeight * camera.aspect *
-                        (intentPrimary ? 0.48f : 0.25f)
+                        (composerPrimary ? 0.48f : 0.25f)
                     : desktopMatrixPanel
                         ? viewHeight * camera.aspect *
                             (matrixPrimary ? 0.66f : 0.27f)
                         : horizontalWorld;
                 float panelVerticalWorld = desktopComposer
-                    ? viewHeight * (intentPrimary ? 0.68f : 0.38f)
+                    ? viewHeight * (composerPrimary ? 0.68f : 0.38f)
                     : desktopMatrixPanel
                         ? viewHeight * (matrixPrimary ? 0.76f : 0.40f)
                         : verticalWorld;
@@ -495,7 +633,7 @@ namespace UnityVolumeRendering
                     panelVerticalWorld / Mathf.Max(1.0f, rect.sizeDelta.y));
                 Vector3 centre = camera.ViewportToWorldPoint(
                     new Vector3(desktopComposer
-                            ? intentPrimary ? 0.70f : 0.84f
+                            ? composerPrimary ? 0.70f : 0.84f
                             : desktopMatrixPanel
                                 ? matrixPrimary ? 0.66f : 0.84f
                                 : 0.5f,
@@ -525,6 +663,174 @@ namespace UnityVolumeRendering
         {
             if (helpPanel != null)
                 helpPanel.SetActive(!helpPanel.activeSelf);
+        }
+
+        /// <summary>
+        /// Say what the control under the pointer does, in the line the notices
+        /// already use — no new geometry, and a live notice always wins. The
+        /// title comes back when the pointer leaves.
+        /// </summary>
+        private void UpdateHoverHint()
+        {
+            if (noticeText == null || hudRaycaster == null ||
+                EventSystem.current == null)
+                return;
+            bool busy = noticeText.gameObject.activeSelf &&
+                Time.unscaledTime < noticeExpiresAt &&
+                !hoverHintShown;
+            string hint = null;
+            if (!busy)
+            {
+                var pointer = new PointerEventData(EventSystem.current)
+                {
+                    position = Input.mousePosition
+                };
+                var results = new List<RaycastResult>();
+                hudRaycaster.Raycast(pointer, results);
+                for (int index = 0; index < results.Count && hint == null;
+                    index++)
+                {
+                    Button button = results[index].gameObject
+                        .GetComponentInParent<Button>();
+                    if (button == null)
+                        continue;
+                    Text caption =
+                        button.GetComponentInChildren<Text>(true);
+                    if (caption != null)
+                        hint = SlabLabHints.For(caption.text);
+                }
+            }
+            if (string.IsNullOrEmpty(hint))
+            {
+                if (hoverHintShown)
+                {
+                    hoverHintShown = false;
+                    noticeText.gameObject.SetActive(false);
+                    if (titleText != null)
+                        titleText.gameObject.SetActive(true);
+                }
+                return;
+            }
+            if (hoverHintShown && noticeText.text == hint)
+                return;
+            hoverHintShown = true;
+            noticeText.text = hint;
+            noticeText.gameObject.SetActive(true);
+            if (titleText != null)
+                titleText.gameObject.SetActive(false);
+            // A hover hint has no timer of its own; it lives until the pointer
+            // leaves, so the shared expiry is pushed out of the way.
+            noticeExpiresAt = float.MaxValue;
+        }
+
+        /// <summary>
+        /// The "Reset View" button and the X key share one entry point. The
+        /// button used to re-fit the volume only, which left the camera where a
+        /// stray right-drag had put it and the Field pair where a focus move had
+        /// left it — so the button did not actually give the view back.
+        /// </summary>
+        private void ResetView()
+        {
+            var locomotion = FindObjectOfType<VolumeSTCubeQuestLocomotion>();
+            if (locomotion != null)
+            {
+                locomotion.ResetDesktopView();
+                return;
+            }
+            if (workbench != null)
+                workbench.ResetVolumeLayout();
+        }
+
+        /// <summary>
+        /// Save what is on screen. ScreenCapture writes at the end of the frame,
+        /// so the coroutine waits for the file instead of assuming it is there.
+        /// </summary>
+        private void SaveSnapshot()
+        {
+            StartCoroutine(SaveSnapshotRoutine());
+        }
+
+        private IEnumerator SaveSnapshotRoutine()
+        {
+            string folder = SlabLabSnapshot.Folder();
+            string path = SlabLabSnapshot.NextPath(DateTime.Now);
+            try
+            {
+                Directory.CreateDirectory(folder);
+            }
+            catch (Exception exception)
+            {
+                ShowNotice("Snapshot folder is not writable: " +
+                    exception.Message);
+                Debug.LogWarning("Snapshot failed: " + exception.Message);
+                yield break;
+            }
+            ScreenCapture.CaptureScreenshot(path, 1);
+            yield return new WaitForEndOfFrame();
+            float deadline = Time.realtimeSinceStartup + 5.0f;
+            while (!File.Exists(path) && Time.realtimeSinceStartup < deadline)
+                yield return null;
+            if (!SlabLabSnapshot.IsPng(path))
+            {
+                ShowNotice("Snapshot failed. See the log for the path.");
+                Debug.LogWarning("Snapshot did not produce a PNG at " + path);
+                yield break;
+            }
+            ShowNotice("Snapshot saved · " + SlabLabSnapshot.FolderName + "/" +
+                Path.GetFileName(path));
+            Debug.Log("Snapshot saved: " + path + " (" +
+                new FileInfo(path).Length + " bytes)");
+        }
+
+        /// <summary>
+        /// The key the operator pressed this frame, read through the shared
+        /// shortcut table so the Help card, the handler and the guards agree.
+        /// </summary>
+        private static SlabLabShortcut PollShortcut(out KeyCode key)
+        {
+            for (int index = 0; index < SlabLabShortcuts.Keys.Length; index++)
+            {
+                KeyCode candidate = SlabLabShortcuts.Keys[index];
+                if (!Input.GetKeyDown(candidate))
+                    continue;
+                key = candidate;
+                return SlabLabShortcuts.Map(candidate);
+            }
+            key = KeyCode.None;
+            return SlabLabShortcut.None;
+        }
+
+        private void ApplyShortcut(SlabLabShortcut shortcut, KeyCode key)
+        {
+            switch (shortcut)
+            {
+                case SlabLabShortcut.ToggleHelp:
+                    ToggleHelp();
+                    break;
+                case SlabLabShortcut.CloseOverlay:
+                    if (historyPanel != null)
+                        historyPanel.SetActive(false);
+                    if (helpPanel != null)
+                        helpPanel.SetActive(false);
+                    break;
+                case SlabLabShortcut.Snapshot:
+                    // Same entry point as the button, so a picture is a picture
+                    // whichever way the operator asks for it.
+                    SaveSnapshot();
+                    break;
+                case SlabLabShortcut.PreviousStep:
+                case SlabLabShortcut.NextStep:
+                case SlabLabShortcut.RangeEntry:
+                    // An open overlay owns the keyboard, and the workbench
+                    // refuses the key itself while a text field is open.
+                    if (historyPanel != null && historyPanel.activeSelf)
+                        return;
+                    if (helpPanel != null && helpPanel.activeSelf)
+                        return;
+                    if (workbench != null)
+                        workbench.DesktopHandleShortcut(key);
+                    break;
+            }
         }
 
         public static bool IsPointerOverHud(Vector2 screenPosition)
@@ -615,11 +921,11 @@ namespace UnityVolumeRendering
             button.targetGraphic = image;
             button.onClick.AddListener(action);
             LayoutElement element = buttonObject.GetComponent<LayoutElement>();
-            element.minWidth = width;
+            element.minWidth = Mathf.Min(width, 120.0f);
             element.preferredWidth = width;
             Text text = CreateText(buttonObject.transform, label);
             text.alignment = TextAnchor.MiddleCenter;
-            text.fontSize = 24;
+            text.fontSize = 22;
             text.fontStyle = FontStyle.Bold;
             Stretch(text.rectTransform, 4.0f, 2.0f);
             return button;

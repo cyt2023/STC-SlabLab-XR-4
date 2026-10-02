@@ -17,8 +17,9 @@ namespace UnityVolumeRendering
             "VolumeSTCube.SlabLabApplicationMode";
         public const string LegacyDesktopPreferenceKey =
             "VolumeSTCube.SlabLabDesktopPreview";
+        /// <summary>Key owned by <see cref="SlabLabSettings"/>.</summary>
         public const string RuntimePreferenceKey =
-            "VolumeSTCube.SlabLabRuntimeApplicationMode";
+            SlabLabSettings.RuntimeApplicationModeKey;
 
         private static bool modeLocked;
         private static VolumeSTCubeApplicationMode lockedMode;
@@ -37,8 +38,7 @@ namespace UnityVolumeRendering
 
         private static VolumeSTCubeApplicationMode ResolveStartupMode()
         {
-            string runtimeSelection = UnityEngine.PlayerPrefs.GetString(
-                RuntimePreferenceKey, string.Empty);
+            string runtimeSelection = SlabLabSettings.RuntimeApplicationMode;
             if (runtimeSelection == VolumeSTCubeApplicationMode.VirtualReality.ToString())
                 return VolumeSTCubeApplicationMode.VirtualReality;
             if (runtimeSelection == VolumeSTCubeApplicationMode.Desktop.ToString())
@@ -73,9 +73,7 @@ namespace UnityVolumeRendering
         {
             lockedMode = mode;
             modeLocked = true;
-            UnityEngine.PlayerPrefs.SetString(RuntimePreferenceKey,
-                mode.ToString());
-            UnityEngine.PlayerPrefs.Save();
+            SlabLabSettings.RuntimeApplicationMode = mode.ToString();
 #if UNITY_EDITOR
             UnityEditor.EditorPrefs.SetString(EditorPreferenceKey,
                 mode.ToString());

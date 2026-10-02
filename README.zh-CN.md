@@ -104,11 +104,22 @@ STC-SlabLab-XR/
 ├── OneDrive_1_4-30-2026/           # 香港 XYZ+T 测试数据（本地存在时）
 ├── RenderingModule/                # Unity 工程
 │   └── Assets/VolumeSTCubeAPI/      # 新增 API 与集成层
+├── Services/                       # S4D 分析后端和 MatPlotAgent 子模块
+├── For_VR/                         # RAW、地理映射及 Wave 离线缓存
+├── datasets/                       # 版本化数据集 manifest
+├── Packaging/macOS/                # macOS 打包与启动脚本
+├── tools/                          # 数据转换、契约与回归检查
 ├── server_example/                 # FastAPI JSON Spec 示例
 ├── docs/                           # API、测试和结构文档
 ├── README.md
 └── README.zh-CN.md
 ```
+
+桌面／VR 工作台已按职责整理为 23 个 partial 文件。主文件保留 Unity
+生命周期、原有字段声明和公开状态；流程导航、矩阵、草稿、历史、结果、
+Field 与 Ground、语音输入和桶运算分别归位。字段初始化顺序、脚本 GUID、
+方法内容、布局参数和服务接口保持原样。具体职责见英文 README 的架构表，
+验证依据见 [重构验收记录](docs/REFACTOR-VERIFICATION.zh-CN.md)。
 
 ## 数据模式
 
